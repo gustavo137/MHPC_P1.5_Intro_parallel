@@ -2,8 +2,8 @@
 #include "Timer.hpp"
 int main(){
  std::vector<double> conini={0,100};
- size_t dim{10000};//100// for leonardo set 10000
- size_t ite{10000};
+ size_t dim{1000};//100// for leonardo set 10000
+ size_t ite{100};
  size_t printInterval{200};
  //std::cout<<"Set the size of the matrix[dim][dim]"<<std::endl;
  //std::cin>>dim;
@@ -17,7 +17,7 @@ int main(){
  CSolver<double> solver(Matrix);
  solver.jacobi(Matrix, ite, printInterval);
  }
- std::cout<<"finished"<<std::endl;
+ //std::cout<<"finished"<<std::endl;
  //call the times
  CSimple_timer::print_timing_results();
  return 0;

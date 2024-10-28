@@ -6,7 +6,7 @@
 #SBATCH -N 1                             # Number of nodes
 ##SBATCH --ntasks-per-node=1             # Run on a single CPU
 #SBATCH --cpus-per-task=32               # 2, 4, 8, 16, 32
-#SBATCH --time=00:10:00                  # Time limit hrs:min:sec
+#SBATCH --time=00:15:00                  # Time limit hrs:min:sec
 #SBATCH -p boost_usr_prod                # for smaller works use --qos=boost_qos_dbg ,     boost is dedicated to works with GPU
 
 

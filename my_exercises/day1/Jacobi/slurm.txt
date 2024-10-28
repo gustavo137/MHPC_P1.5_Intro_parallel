@@ -1,0 +1,42 @@
+Running jacobi using openmp for size=10000
+num threads = 4
+Duration for 'Jacobi using openmp': 28486 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 28486 ms, Calls: 1
+num threads = 8
+Duration for 'Jacobi using openmp': 23108 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 23108 ms, Calls: 1
+num threads = 12
+Duration for 'Jacobi using openmp': 19475 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 19475 ms, Calls: 1
+num threads = 16
+Duration for 'Jacobi using openmp': 16474 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 16474 ms, Calls: 1
+num threads = 20
+Duration for 'Jacobi using openmp': 16345 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 16345 ms, Calls: 1
+num threads = 24
+Duration for 'Jacobi using openmp': 16107 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 16107 ms, Calls: 1
+num threads = 28
+Duration for 'Jacobi using openmp': 15788 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 15788 ms, Calls: 1
+num threads = 32
+Duration for 'Jacobi using openmp': 15120 micro s
+
+Timing results:
+Jacobi using openmp - Total time: 15120 ms, Calls: 1
+

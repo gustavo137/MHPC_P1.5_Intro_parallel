@@ -1,5 +1,5 @@
 # Set output file name
-set output 'histo_results.png'
+set output 'histo_results_leo.png'
 
 # Reset the plot settings
 reset
@@ -15,7 +15,7 @@ set style fill solid 0.20 border
 set terminal png size 1200,800 font "Arial,10"
 
 # Set plot title, x-axis label, and y-axis label
-set title "Histogram of Jacobi size 100 using openmp, cpuinfo 2 threads, then 3 and 4 is oversuscribing"
+set title "Histogram of Jacobi size 1000 with 100 iterations using openmp"
 set xlabel "threads"
 set ylabel "time in micro seconds"
 

@@ -20,5 +20,5 @@ set xlabel "threads"
 set ylabel "time in micro seconds"
 
 # Plot the histogram data
-plot 'resultsleo.dat' using 1:2:xtic(1) with boxes lc rgb "#0045FF" title "time", \
-     'resultsleo.dat' using 1:($2+0.25):2 with labels title ""
+plot 'results_leo2.txt' using 1:2:xtic(1) with boxes lc rgb "#0045FF" title "time", \
+     'results_leo2.txt' using 1:($2+0.25):2 with labels title ""

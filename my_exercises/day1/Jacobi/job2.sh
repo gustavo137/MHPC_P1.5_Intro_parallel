@@ -15,7 +15,7 @@ rm -f results_leo2.txt
 g++ -O3 main.cpp -o main.x -I. -fopenmp
 
 # Iterar sobre diferentes cantidades de threads (en este caso de 1 a 32)
-for num_threads in {1..32}; do
+for num_threads in {1..120}; do
     echo "Running with OMP_NUM_THREADS=$num_threads"
     export OMP_NUM_THREADS=$num_threads
 

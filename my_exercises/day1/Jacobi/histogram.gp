@@ -15,9 +15,9 @@ set style fill solid 0.20 border
 set terminal png size 1200,800 font "Arial,10"
 
 # Set plot title, x-axis label, and y-axis label
-set title "Histogram of Jacobi size 100 for_each ::par"
+set title "Histogram of Jacobi size 100 using openmp, cpuinfo 2 threads, then 3 and 4 is oversuscribing"
 set xlabel "threads"
-set ylabel "time in ms"
+set ylabel "time in micro seconds"
 
 # Plot the histogram data
 plot 'resultsleo.dat' using 1:2:xtic(1) with boxes lc rgb "#0045FF" title "time", \

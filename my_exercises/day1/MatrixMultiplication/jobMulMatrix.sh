@@ -12,34 +12,34 @@
 
 echo "Running jacobi using openmp for size=10000"
 g++ -O3 main.cpp -o main.x -I. -fopenmp
-export "num threads = 4"
+echo "num threads = 4"
 export OMP_NUM_THREADS=4
 ./main.x
 
-export "num threads = 8"
+echo "num threads = 8"
 export OMP_NUM_THREADS=8
 ./main.x
 
-export "num threads = 12"
+echo "num threads = 12"
 export OMP_NUM_THREADS=12
 ./main.x
 
-export "num threads = 16"
+echo "num threads = 16"
 export OMP_NUM_THREADS=16
 ./main.x
 
-export "num threads = 20"
+echo "num threads = 20"
 export OMP_NUM_THREADS=20
 ./main.x
 
-export "num threads = 24"
+echo "num threads = 24"
 export OMP_NUM_THREADS=24
 ./main.x
 
-export "num threads = 28"
+echo "num threads = 28"
 export OMP_NUM_THREADS=28
 ./main.x
 
-export "num threads = 32"
+echo "num threads = 32"
 export OMP_NUM_THREADS=32
 ./main.x

@@ -1,3 +1,9 @@
 *.out
 *.x
 *.txtg
+*.datjacobi
+*.datjacobiMPI
+*.datjacobiSerial
+*.datjacobiParallel
+*.datjacobiMPI2
+*.datjacobiMPI4

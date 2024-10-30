@@ -6,6 +6,7 @@
 #include <string>
 #include <vector>
 #include <mpi.h>
+#include "simple_timer.hpp"
 //#include <omp.h>
 
 template <typename T> class CMesh {
@@ -56,10 +57,13 @@ void CSolver<U>::jacobi(CMesh<U> &M, const size_t &ite, const size_t &pI) {
   // solve the jacobi
   for (int it = 0; it <= ite; it++) {
     
+    {SimpleTimer t("Comunication_Time");
     // here is the function to exchange ghost 
     exchange_ghost_cells(M);
-   
+    }
+    {SimpleTimer t ("Calculation_Time");
     evolve(M.matrix, M.new_matrix, M.dim_local, M.dim);
+    }
     // swap the matrices
     M.matrix.swap(M.new_matrix);
     // to does not run this part. To run use -DPRINT

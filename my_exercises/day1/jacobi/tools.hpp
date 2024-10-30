@@ -48,7 +48,7 @@ void CSolver<U>::jacobi(CMesh<U> &M, const size_t &ite, const size_t &pI) {
 #ifdef PRINT
     // correct it % pI==0
     // to see if openmp is working I only print the it ==10 for example
-    if (it == 10) { // correct it % pI ==0
+    if (it == 0) { // correct it % pI ==0
       savegnuplot(M.matrix, M.dim, it);
     }
 #endif

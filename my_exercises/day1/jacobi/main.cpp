@@ -2,8 +2,8 @@
 #include "Timer.hpp"
 int main(){
  std::vector<double> conini={0,100};
- size_t dim{1000};//100// for leonardo set 10000
- size_t ite{100};
+ size_t dim{9};//100// for leonardo set 10000
+ size_t ite{10};
  size_t printInterval{200};
  //std::cout<<"Set the size of the matrix[dim][dim]"<<std::endl;
  //std::cin>>dim;

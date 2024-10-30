@@ -8,7 +8,7 @@
 //g++ name.cpp -o name.x -lgtest
 // to do hardcodear un elemento de cada file to see if its different from cero and 
 //Dim of the matrix
-const size_t dim = 100;
+const size_t dim = 9;
 
 // function to sabe the data in a vector 
 std::vector<double> my_data_in_vector(const std::string& filename){
@@ -45,8 +45,8 @@ std::vector<double> my_data_in_vector(const std::string& filename){
 TEST(FunctionTest, ChekingOutput) {
 
     // Act: Call the function.
-    std::vector<double> m1 = my_data_in_vector("10.datjacobiParallel");
-    std::vector<double> m2 = my_data_in_vector("10.datjacobiSerial");
+    std::vector<double> m1 = my_data_in_vector("1.datjacobiMPI");
+    std::vector<double> m2 = my_data_in_vector("0.datjacobi");
 
     // Assert: Check the result.
     EXPECT_EQ(m1,m2);

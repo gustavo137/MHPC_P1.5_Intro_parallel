@@ -2,17 +2,17 @@
  * 
  * Use this as
  * {
- *      SimpleTimer t("what we are timing")
+ *      Parallel_Timer t("what we are timing")
  *      ... code to be timed
  * }
  * 
  * at the end of main put
- * SimpleTimer::gather_timing_data(MPI_COMM_WORLD, 0);
+ * Parallel_Timer::gather_timing_data(MPI_COMM_WORLD, 0);
  * 
  */
 
-#ifndef SIMPLE_TIMER_H
-#define SIMPLE_TIMER_H
+#ifndef PARALLEL_TIMER_H
+#define PARALLEL_TIMER_H
 
 #include <mpi.h>
 #include <iostream>
@@ -20,7 +20,7 @@
 #include <string>
 #include <chrono>
 #include <map>
-#include "math_utils.hpp"
+#include "timer_tools.hpp"
 
 
 struct TimerData{
@@ -30,12 +30,12 @@ struct TimerData{
 
 std::map<std::string, TimerData> timing_table;
 
-class SimpleTimer{
+class Parallel_Timer{
 public:
     //using time_units = std::chrono::milliseconds;
     using time_units = std::chrono::microseconds;
     
-    SimpleTimer(const std::string& name0) : name(name0){
+    Parallel_Timer(const std::string& name0) : name(name0){
         if (timing_table.find(name) == timing_table.end()) {
             timing_table[name] = TimerData();
         }
@@ -46,7 +46,7 @@ public:
         start_time = std::chrono::steady_clock::now();
     }
 
-    ~SimpleTimer(){
+    ~Parallel_Timer(){
         auto end_time = std::chrono::steady_clock::now();
         auto duration = std::chrono::duration_cast<time_units>(end_time - start_time).count();
         
@@ -80,7 +80,7 @@ private:
  * 
  * 
  */
-void SimpleTimer::gather_timing_data(MPI_Comm comm, int root) {
+void Parallel_Timer::gather_timing_data(MPI_Comm comm, int root) {
     int world_rank, world_size;
     MPI_Comm_rank(comm, &world_rank);
     MPI_Comm_size(comm, &world_size);
@@ -223,7 +223,7 @@ void SimpleTimer::gather_timing_data(MPI_Comm comm, int root) {
 }
 
 
-void SimpleTimer::print_timing_results(){
+void Parallel_Timer::print_timing_results(){
     std::cout << "Timing results:\n";
     for (const auto &entry : timing_table) {
         std::cout << entry.first << " -> Total time: " << entry.second.time << " ms, Calls: " << entry.second.calls << std::endl;

@@ -1,5 +1,5 @@
-#ifndef MATH_UTILS_H
-#define MATH_UTILS_H
+#ifndef TIMER_TOOLS_H
+#define TIMER_TOOLS_H
 
 #include <iostream>
 #include <vector>

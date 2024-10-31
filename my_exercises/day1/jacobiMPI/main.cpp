@@ -10,8 +10,8 @@ int main(int argc, char **argv){
 
   // Things to the matriz
   std::vector<double> conini = {0, 100};
-  size_t dim{12000}; // 100// for leonardo set 10000
-  size_t ite{1000};
+  size_t dim{100}; // 100// for leonardo set 12000
+  size_t ite{100};// leonardo 1000
   size_t printInterval{200};
 
   // Set the things to each rank
@@ -33,12 +33,12 @@ int main(int argc, char **argv){
   //
   
   CSolver<double> solver(Matrix);
-  {SimpleTimer t("Total_Time");
+  {Parallel_Timer t("Total_Time");
   solver.jacobi(Matrix, ite, printInterval);
   }
   //
   // print the times
-  SimpleTimer::gather_timing_data(MPI_COMM_WORLD, 0);
+  Parallel_Timer::gather_timing_data(MPI_COMM_WORLD, 0);
 
   MPI_Finalize();
   return 0;

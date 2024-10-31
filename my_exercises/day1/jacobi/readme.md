@@ -6,3 +6,5 @@ g++ -DPRINT main.cpp -o main.x -I.
 ~~~
 PRINT is the name of the function that save the data.
 If we run the code without -DPRINT the function savedata does not run.
+
+To run using openmp add the flag -fopenmp in the compilation time and -O3

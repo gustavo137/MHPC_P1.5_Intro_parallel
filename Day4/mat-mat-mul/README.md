@@ -30,3 +30,17 @@ The main idea is performing a `for` loop cycle over the number of processing ele
 <img src="./images/04.png" style="width: 500px; margin-left: auto; margin-right: auto; display: block;">
 <figcaption>Figure 4: During the computation of the local portion of the matrix C, each process first compute the block of the global result. Then it is copied to the proper memory location in the global matrix C.</figcaption>
 
+Main loop schema:
+
+for( count 0 -> npes ){
+
+     //Create the contiguos block of data B_block from the local matrix B
+     create_B_block( B, B_block)
+
+     //All_gather to collect in all processes the clock of colums of B
+     MPI_All_gather(B_block, ...., B_col, ...)
+
+     //Perform the matmul on local data and compute the related C_clock 
+     matmul( A, B_col, C_block)
+}
+

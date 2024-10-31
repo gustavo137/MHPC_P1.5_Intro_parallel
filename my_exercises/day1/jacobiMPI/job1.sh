@@ -9,6 +9,7 @@
 #SBATCH -p boost_usr_prod
 
 echo "Running jacobiMPI 1"
+module load gcc/12.2.0
 module load openmpi/4.1.6--gcc--12.2.0
 mpic++ -O3 main.cpp -o main.x -I.
 

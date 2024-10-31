@@ -1,0 +1,5 @@
+Running jacobiMPI 32
+Timing Statistics:
+Calculation_Time Avg: 250592 micro_s
+Comunication_Time Avg: 296893 micro_s
+Total_Time Avg: 549751 micro_s

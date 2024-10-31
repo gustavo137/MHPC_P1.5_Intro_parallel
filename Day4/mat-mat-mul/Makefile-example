@@ -1,0 +1,65 @@
+## Standard preamble
+
+SHELL=/bin/bash
+CC=mpicc
+NVCC=nvcc
+mainfile=main.c
+
+OBJDIR=obj
+SRCDIR=src
+INCLUDEDIR=include
+INCLUDELIBS=-fopenmp
+
+## Standard compiler flags
+
+CFLAGS=-I$(INCLUDEDIR) -march=native $(INCLUDELIBS) $(EXTRAFLAGS)
+OBJFLAGS=-I$(INCLUDEDIR) -march=native $(INCLUDELIBS) $(EXTRAFLAGS)
+
+## Debug flags
+
+# Uncomment the following line to enable it
+# EXTRAFLAGS+=-DDEBUG
+# EXTRAFLAGS+=-DSMALL
+# EXTRAFLAGS+=-DSMALL_INTS
+# EXTRAFLAGS+=-DDEBUG_INIT
+# EXTRAFLAGS+=-DDEBUG_COL_BLOCK
+# EXTRAFLAGS+=-DDEBUG_COL_GATHER
+# EXTRAFLAGS+=-DDEBUG_PROD
+# EXTRAFLAGS+=-DNOSTOPWATCH
+
+EXTRAFLAGS+=-O3  # kept separate because causes issues with printing order in debug mode
+
+## Implementation specific things
+
+BLASFLAGS=-DOPENBLAS -I/usr/include/openblas -L/usr/lib -lopenblas
+
+## Objects definitions
+
+OBJS=$(OBJDIR)/main.o \
+     $(OBJDIR)/init.o \
+     $(OBJDIR)/debug.o \
+     $(OBJDIR)/column_gathering.o \
+     $(OBJDIR)/product.o \
+     $(OBJDIR)/stopwatch.o
+
+## Compilation
+
+all: main.x
+
+blas: CFLAGS += $(BLASFLAGS)
+blas: $(OBJS)
+	$(CC) $(CFLAGS) -o main.x $^ $(BLASFLAGS)
+
+main.x: $(OBJS)
+	$(CC) $(OBJFLAGS) -o $@ $^
+
+$(OBJDIR)/main.o: $(mainfile)
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	$(CC) $(CFLAGS) -c -o $@ $^
+
+clean:
+	rm -f $(OBJDIR)/*.o main.x
+
+.PHONY: all blas cuda clean

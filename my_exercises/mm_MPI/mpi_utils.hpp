@@ -1,5 +1,5 @@
-#ifndef MPI_TOOLS_HPP
-#define MPI_TOOLS_HPP
+#ifndef MPI_UTILS_HPP
+#define MPI_UTILS_HPP
 
 #include <vector>
 #include <type_traits>
@@ -50,6 +50,7 @@ void mpi_recv(std::vector<T>& data, int source, int tag, MPI_Comm comm) {
     }
 }
 
+// Change MPI_Senrecv to MPI_Sendrecv
 template<typename T>
 void mpi_sendrecv(std::vector<T>& sendbuff, int dest, int sendtag, std::vector<T>& recvbuff, int source, int recvtag, MPI_Comm comm) {
     if constexpr (std::is_same<T, int>::value) {
@@ -115,30 +116,30 @@ void isend_irecv_data(std::vector<T>& send_data, int dest, std::vector<T>& recv_
 
 template<typename T>
 void mpi_allgatherv(const std::vector<T>& sendbuf, int sendcount,
-                     std::vector<T>& recvbuf, const std::vector<int>& recvcounts,
-                     const std::vector<int>& displs, MPI_Comm comm) {
-     MPI_Datatype mpi_type = get_mpi_datatype<T>();
- 
+                    std::vector<T>& recvbuf, const std::vector<int>& recvcounts,
+                    const std::vector<int>& displs, MPI_Comm comm) {
+    MPI_Datatype mpi_type = get_mpi_datatype<T>();
+
     if (mpi_type != MPI_BYTE) {
-         // Types directly supported by MPI
-         MPI_Allgatherv(sendbuf.data(), sendcount, mpi_type,
-                        recvbuf.data(), recvcounts.data(), displs.data(), mpi_type,
-                        comm);
-     } else {
-         // For types not directly supported by MPI, send as bytes
-         // Adjust counts and displacements accordingly
-         std::vector<int> byte_recvcounts(recvcounts.size());
-         std::vector<int> byte_displs(displs.size());
- 
-         for (size_t i = 0; i < recvcounts.size(); ++i) {
-             byte_recvcounts[i] = recvcounts[i] * sizeof(T);
-             byte_displs[i] = displs[i] * sizeof(T);
-         }
- 
-         MPI_Allgatherv(sendbuf.data(), sendcount * sizeof(T), MPI_BYTE,
-                        recvbuf.data(), byte_recvcounts.data(), byte_displs.data(), MPI_BYTE,
-                        comm);
-     }
+        // Types directly supported by MPI
+        MPI_Allgatherv(sendbuf.data(), sendcount, mpi_type,
+                       recvbuf.data(), recvcounts.data(), displs.data(), mpi_type,
+                       comm);
+    } else {
+        // For types not directly supported by MPI, send as bytes
+        // Adjust counts and displacements accordingly
+        std::vector<int> byte_recvcounts(recvcounts.size());
+        std::vector<int> byte_displs(displs.size());
+
+        for (size_t i = 0; i < recvcounts.size(); ++i) {
+            byte_recvcounts[i] = recvcounts[i] * sizeof(T);
+            byte_displs[i] = displs[i] * sizeof(T);
+        }
+
+        MPI_Allgatherv(sendbuf.data(), sendcount * sizeof(T), MPI_BYTE,
+                       recvbuf.data(), byte_recvcounts.data(), byte_displs.data(), MPI_BYTE,
+                       comm);
+    }
 }
 
 #endif

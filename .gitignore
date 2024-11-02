@@ -7,3 +7,5 @@
 *.datjacobiParallel
 *.datjacobiMPI2
 *.datjacobiMPI4
+*.datg
+MPI_overlap_not_working/

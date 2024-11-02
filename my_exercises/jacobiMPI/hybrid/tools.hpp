@@ -246,7 +246,9 @@ void CSolver<T>::evolve(std::vector<double> &mat, std::vector<double> &new_mat,
                         size_t dimm_local, size_t dimm) {
   // This will be a row dominant program.
   // para usar openmp
- #pragma omp parallel for
+ //#pragma omp parallel 
+ //{
+  #pragma omp parallel for
   for (size_t i = 1; i <= dimm_local; ++i) {
     for (size_t j = 1; j <= dimm; ++j) {
       new_mat[(i * (dimm + 2)) + j] =
@@ -255,6 +257,7 @@ void CSolver<T>::evolve(std::vector<double> &mat, std::vector<double> &new_mat,
            mat[((i + 1) * (dimm + 2)) + j] + mat[(i * (dimm + 2)) + (j - 1)]);
     }
   }
+ //}
 }
 // evolve ends
 //////// function exchange_ghost_cells(Mesh<T>& m);

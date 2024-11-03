@@ -9,7 +9,7 @@
 #include <random>
 #include <omp.h>
 #include "mpi_tools.hpp"
-
+#include <cblas.h> // to compile remember to use -lopenblas or -lblas
 template <typename T>
 class CMatrix {
 public:
@@ -163,6 +163,95 @@ void multiply_in_parallel(CMatrix<T>& A, CMatrix<T>& B, CMatrix<T>& C, int N_loc
    } // end loop for every colum of B
 }
 //////////// end multiply in parallel ////////////////////////////
+//////////// main function multiply_in_parallel BLAS //////////////////
+template <typename T>
+void multiply_in_parallel_blas_dgemm(CMatrix<T>& A, CMatrix<T>& B, CMatrix<T>& C, int N_loc,int N,int npes, std::vector<int> row_displacements, std::vector<int>N_locs){
+   //std::cout<<C<<std::endl;
+   // crear the vertical columna of B
+   CMatrix<T> B_col(N, N_loc);
+   // loop for every columna of B
+   for(int col=0; col<npes;col++){
+     int col_start =  row_displacements[col];//Starting colum index for process col
+     int col_count = N_locs[col];    // number of colums asigned to process col
+
+     /// start comunication 
+     // resize the B_col vertical B_col(N,col_count)
+     B_col.matresize(N, col_count);
+
+     // now each proces extracts the columns [col_start, col_start + col_count];
+     // so we need to pack the data to send in the buffer
+     std::vector<T> buffer_to_send(N_loc * col_count);
+     for(int i=0;i<N_loc; i++){
+       for(int j=0;j<col_count;j++){
+          buffer_to_send[i*col_count + j]=B.mat[i*N + col_start + j];
+       }
+     }
+     
+     // now prepare count and displacements to MPI_Gatherv
+     std::vector<int> recv_counts(npes);
+     std::vector<int> displacements(npes);
+     int total_recv_count=0;
+     for(int rank = 0;rank<npes;rank++){
+       recv_counts[rank] = N_locs[rank]*col_count;// Each process sends N_locs[rank]x col_count elements
+       displacements[rank] = total_recv_count;
+       total_recv_count += recv_counts[rank];
+     }
+     
+     // now recive buffer to vertical col of B
+     std::vector<T> recv_buffer(total_recv_count);
+
+     // now do all gather with th enecesary colums to reconstruct the vertical colum of B
+     // remember this function is in mpi_tools.hpp
+     mpi_allgatherv(buffer_to_send, N_loc*col_count,recv_buffer, recv_counts,displacements,MPI_COMM_WORLD);
+     
+     //Now we need to reconstruct the vertical col of B of size  (N x col_count)
+     int displas = 0;//(offsets)
+     for(int rank = 0; rank<npes;rank++){
+        int rows_rank = N_locs[rank];
+        for(int i=0;i<rows_rank;i++){
+           int global_row = displacements[rank]+i;
+           for(int j=0;j<col_count;j++){
+              B_col.mat[global_row*col_count + j]=recv_buffer[displas + i*col_count + j];
+           }
+        }
+        displas += rows_rank*col_count; 
+     } 
+     
+     /// end comunication 
+     
+     /// start computation 
+     // multiply A_loc (N_loc x N) with B_col(N x col_count) and store the result in C
+     /*
+     for(int i=0;i<N_loc;i++){
+       for(int j=0;j<col_count;j++){
+          T sum=0;
+          for(int k=0;k<N;k++){
+            sum += A.mat[i*N_loc+k] * B_col.mat[k*col_count+j];
+          }
+          // store in C[N_loc,col_count]
+          C.mat[i*N + col_start + j]=sum;
+       }
+     } */
+ 
+     // Llamada a cblas_dgemm
+     std::vector<double> A_double(A.mat.begin(), A.mat.end());
+     std::vector<double> B_col_double(B_col.mat.begin(), B_col.mat.end());
+     std::vector<double> C_double(C.mat.begin(), C.mat.end());
+
+      // Llamada a cblas_dgemm
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, 
+            N_loc, col_count, N, 
+            1.0, A_double.data(), N, B_col_double.data(), col_count, 
+            0.0, C_double.data() + col_start, N);
+
+      // Copiar el resultado de vuelta a la matriz `int`
+      std::copy(C_double.begin(), C_double.end(), C.mat.begin());
+
+     /// end computation 
+   } // end loop for every colum of B
+}
+//////////// end multiply in parallel BLAS ////////////////////////////
+
 
 /////////// print in parallel ////////////////////
 template <typename T>

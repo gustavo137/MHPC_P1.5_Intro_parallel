@@ -43,7 +43,7 @@ public:
     size_t N;
     CMatrix(size_t N0) : N(N0), matrix(N0 * N0, T{}) {}
     void fill(T max0_to);
-    T* data() { return matrix.data(); }
+    T* data() { return matrix.data(); }// to aboid this only use A.matrix.data() in each function
 };
 
 template <typename T>
@@ -84,10 +84,10 @@ void multiply_blocks_blas(const CMatrix<T>& A, const CMatrix<T>& B, CMatrix<T>& 
     cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
                 BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE,
                 1.0,
-                A.matrix.data(), BLOCK_SIZE,   // Matriz A y su lda
-                B.matrix.data(), BLOCK_SIZE,   // Matriz B y su ldb
-                1.0,
-                C.matrix.data(), BLOCK_SIZE);  // Matriz C y su ldc
+                A.matrix.data(), BLOCK_SIZE,   //
+                B.matrix.data(), BLOCK_SIZE,   //
+                1.0,                           // because we want to add to C 
+                C.matrix.data(), BLOCK_SIZE);  //
 }
 template <typename T>
 void gather_and_print_matrix(const CMatrix<T>& local_matrix, int BLOCK_SIZE, int N, int rank, int q, MPI_Comm comm, const std::string& matrix_name) {

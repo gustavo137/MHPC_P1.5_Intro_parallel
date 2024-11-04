@@ -17,4 +17,5 @@ mpic++ -O3 main.cpp -o main.x -I. -lopenblas
 
 ## here we can only put : mpirun ./main.x   because the computer fills the np itself
 ## remember -np = N*(ntasks_per_node)
-mpirun -np 16 ./main.x 5000
+## mpirun -np 16 ./main.x 5000
+mpirun ./main.x 5000

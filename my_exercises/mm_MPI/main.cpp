@@ -35,8 +35,8 @@ int main(int argc, char **argv) {
   A.fill(10.0);
   B.fill(10.0);
 
-  print_in_parallel(A,rank,npes,"A");
-  print_in_parallel(B,rank,npes,"B");
+  //print_in_parallel(A,rank,npes,"A");
+  //print_in_parallel(B,rank,npes,"B");
 
   //
 
@@ -49,8 +49,8 @@ int main(int argc, char **argv) {
     Parallel_Timer t("mm blas");
     multiply_parallel_blas(A, B, D, N, N_loc, npes, row_offsets, N_locs);
   }
-  print_in_parallel(C,rank,npes,"C naiv");
-  print_in_parallel(D,rank,npes,"C blas");
+  //print_in_parallel(C,rank,npes,"C naiv");
+  //print_in_parallel(D,rank,npes,"C blas");
 
   MPI_Barrier(MPI_COMM_WORLD);
   Parallel_Timer::gather_timing_data(MPI_COMM_WORLD, 0);

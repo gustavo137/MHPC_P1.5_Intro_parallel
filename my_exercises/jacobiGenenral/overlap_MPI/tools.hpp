@@ -83,6 +83,7 @@ void CSolver<U>::jacobi(CMesh<U> &M, const size_t &ite, const size_t &pI) {
       }
       // end computation of each element inside  while comunication step 1
       // wait for non-bloking comunication
+      // at this point we need the info thast is sended and recved 
       {
         Parallel_Timer t("Comm time: ");
         MPI_Waitall(4, request, MPI_STATUS_IGNORE);

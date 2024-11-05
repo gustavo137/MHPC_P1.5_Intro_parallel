@@ -11,7 +11,7 @@ int main(int argc, char **argv) {
   if (argc > 1) {
     N = std::stoi(argv[1]);
   }
-  // at this point we will use onli npes as multiplo de N, with square matrices
+  // at this point we will use only npes as multiplo de N, with square matrices
   // N*N, to have remainder=0;
   // npes as multiplo of N, example if N=10, then npes= 1,2,5,10.
   int remainder = N % npes;
@@ -49,6 +49,7 @@ int main(int argc, char **argv) {
     Parallel_Timer t("mm blas total_time ");
     multiply_parallel_blas(A, B, D, N, N_loc, npes, row_offsets, N_locs);
   }
+  
   //print_in_parallel(C,rank,npes,"C naiv");
   //print_in_parallel(D,rank,npes,"C blas");
 

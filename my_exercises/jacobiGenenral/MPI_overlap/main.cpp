@@ -7,15 +7,15 @@ int main(int argc, char **argv) {
 
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
   MPI_Comm_size(MPI_COMM_WORLD, &world_size);
-  
+
   // Things to the matriz
   std::vector<double> conini = {0, 100};
-  size_t dim{9};  // by default
- 
-  if(argc>1){
-    dim=std::atoi(argv[1]); //for leonardo 12000
+  size_t dim{9}; // by default
+
+  if (argc > 1) {
+    dim = std::atoi(argv[1]); // for leonardo 12000
   }
- 
+
   size_t ite{1000}; // leonardo 1000
   size_t printInterval{200};
 
@@ -42,9 +42,12 @@ int main(int argc, char **argv) {
     Parallel_Timer t("Total_Time");
     solver.jacobi(Matrix, ite, printInterval);
   }
-  //Matrix.print_in_parallel();// Matrix after all the iterations 
+  if (rank == 0) {
+    std::cout << "Remember comp_time = comp_time - comm_time "<<std::endl;
+  }
+  //Matrix.print_in_parallel();// Matrix after all the iterations
   //
-  // print the times
+  //  print the times
   Parallel_Timer::gather_timing_data(MPI_COMM_WORLD, 0);
 
   MPI_Finalize();

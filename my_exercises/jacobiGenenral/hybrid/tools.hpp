@@ -38,7 +38,7 @@ public:
   void evolve(std::vector<double> &mat, std::vector<double> &new_mat, size_t dimm, size_t dimm_local);
 
 private:
-  void exchange_ghost_cells(CMesh<T>& M);
+  void exchange_ghost_rows(CMesh<T>& M);
 };
 
 ///////////// end class Solver
@@ -59,7 +59,7 @@ void CSolver<U>::jacobi(CMesh<U> &M, const size_t &ite, const size_t &pI) {
     
     {Parallel_Timer t("Comunication_Time");
     // here is the function to exchange ghost 
-    exchange_ghost_cells(M);
+    exchange_ghost_rows(M);
     }
     {Parallel_Timer t ("Calculation_Time");
     evolve(M.matrix, M.new_matrix, M.dim_local, M.dim);
@@ -246,8 +246,6 @@ void CSolver<T>::evolve(std::vector<double> &mat, std::vector<double> &new_mat,
                         size_t dimm_local, size_t dimm) {
   // This will be a row dominant program.
   // para usar openmp
- //#pragma omp parallel 
- //{
   #pragma omp parallel for
   for (size_t i = 1; i <= dimm_local; ++i) {
     for (size_t j = 1; j <= dimm; ++j) {
@@ -257,12 +255,11 @@ void CSolver<T>::evolve(std::vector<double> &mat, std::vector<double> &new_mat,
            mat[((i + 1) * (dimm + 2)) + j] + mat[(i * (dimm + 2)) + (j - 1)]);
     }
   }
- //}
 }
 // evolve ends
-//////// function exchange_ghost_cells(Mesh<T>& m);
+//////// function exchange_ghost_rows(Mesh<T>& m);
 template <typename T>
-void CSolver<T>::exchange_ghost_cells(CMesh<T>& M){
+void CSolver<T>::exchange_ghost_rows(CMesh<T>& M){
   int dim=M.dim;
   int dim_local = M.dim_local;
   int rank = M.rank;
@@ -294,7 +291,7 @@ void CSolver<T>::exchange_ghost_cells(CMesh<T>& M){
   }
 
 }
-/// end void exchange_ghost_cells
+/// end void exchange_ghost_rows
 ////////////////end functions needed////////////////////
 
 //////  functions MPI_ send recv

@@ -1,5 +1,4 @@
 #include "tools.hpp"
-#include <mpi.h>
 
 int main(int argc, char **argv) {
   MPI_Init(&argc, &argv);
@@ -44,6 +43,10 @@ int main(int argc, char **argv) {
   }
   //Matrix.print_in_parallel();// Matrix after all the iterations 
   //
+  if (rank == 0) {
+    std::cout << "Remember comp_time = comp_time - comm_time "<<std::endl;
+  }
+
   // print the times
   Parallel_Timer::gather_timing_data(MPI_COMM_WORLD, 0);
 

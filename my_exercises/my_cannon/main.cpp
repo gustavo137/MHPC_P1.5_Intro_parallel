@@ -20,7 +20,9 @@ int main(int argc, char **argv) {
   q = ((int)(std::sqrt(size)));
   if (q * q != size) {
     if (rank == 0) {
+      std::cerr<< "------------------------------------"<<std::endl;
       std::cerr << "npes needs to be a perfect square." << std::endl;
+      std::cerr<< "------------------------------------"<<std::endl;
     }
     MPI_Abort(MPI_COMM_WORLD, EXIT_FAILURE);
   }
@@ -38,8 +40,8 @@ int main(int argc, char **argv) {
   
   // shifts to left, rignt, up and down
   int left, right, up, down;
-  // MPI_Cart_shift(MPI_Comm, int direction, &rank_source ,&rank_dest)
-  // direction the most importan part: to shift rows -> 0, columm ->1
+  // MPI_Cart_shift(MPI_Comm, int direction, displacement, &rank_source ,&rank_dest)
+  // direction the most importan part: to shift rows -> 1, columm ->0
   // the amoung of shift 1 or -1. 
   MPI_Cart_shift(cart_comm, 1, 1, &left, &right);
   MPI_Cart_shift(cart_comm, 0, 1, &up, &down);
@@ -60,6 +62,8 @@ int main(int argc, char **argv) {
   // gather_and_print_matrix(A, BLOCK_SIZE, N, rank, q, MPI_COMM_WORLD, "A");
   // gather_and_print_matrix(B, BLOCK_SIZE, N, rank, q, MPI_COMM_WORLD, "B");
 
+ // in this past only use Isen and I recv 
+ 
   {Parallel_Timer t("Tolat time: ");
     //Initial displacement of blocks A and B
     {Parallel_Timer t("Comm time: "); // Comm time = comm time - comp time.
@@ -101,6 +105,9 @@ int main(int argc, char **argv) {
   //gather_and_print_matrix(D, BLOCK_SIZE, N, rank, q, MPI_COMM_WORLD, "D");
 
   // Print times
+  if(rank==0){
+    std::cout<<"Comm time = comm time - comp time."<< std::endl;
+  }
   Parallel_Timer::gather_timing_data(MPI_COMM_WORLD, 0);
 
   MPI_Finalize();

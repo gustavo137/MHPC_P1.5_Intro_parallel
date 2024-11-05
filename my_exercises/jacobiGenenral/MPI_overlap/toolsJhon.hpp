@@ -64,10 +64,9 @@ void CSolver<U>::jacobi(CMesh<U> &M, const size_t &ite, const size_t &pI) {
               down_rank, 1, MPI_COMM_WORLD, &request[1]);
 
     // Inicialize non-bloking Isend from process up and dows
-    MPI_Isend(&M.matrix[1 * (dim + 2)], dim + 2, MPI_DOUBLE, up_rank, 1,
-              MPI_COMM_WORLD, &request[2]);
-    MPI_Isend(&M.matrix[(dim_local) * (dim + 2)], dim + 2, MPI_DOUBLE,
-              down_rank, 0, MPI_COMM_WORLD, &request[3]);
+    //  MPI_Isend(&M.matrix[1 * (dim + 2)], dim + 2, MPI_DOUBLE, up_rank, 1,
+    //  MPI_COMM_WORLD, &request[2]); MPI_Isend(&M.matrix[(dim_local) * (dim +
+    //  2)], dim + 2, MPI_DOUBLE, down_rank, 0, MPI_COMM_WORLD, &request[3]);
     {
       Parallel_Timer t("Computation time"); // comp_time = comp_time - comm_time
       // now we need to compute each elemenet inside  while the comunication is
@@ -106,10 +105,17 @@ void CSolver<U>::jacobi(CMesh<U> &M, const size_t &ite, const size_t &pI) {
                       M.matrix[(dim_local * (dim + 2)) + (j - 1)]);
       }
       // end for down_rank
-    }
-    ////////////////////////////////////////////////////////////////
-    // swap the matrices
-    M.matrix.swap(M.new_matrix);
+
+      ////////////////////////////////////////////////////////////////
+      // swap the matrices
+      M.matrix.swap(M.new_matrix);
+
+      // Inicialize non-bloking Isend from process up and dows
+      MPI_Isend(&M.matrix[1 * (dim + 2)], dim + 2, MPI_DOUBLE, up_rank, 1,
+                MPI_COMM_WORLD, &request[2]);
+      MPI_Isend(&M.matrix[(dim_local) * (dim + 2)], dim + 2, MPI_DOUBLE,
+                down_rank, 0, MPI_COMM_WORLD, &request[3]);
+    } // end comunication
 // to does not run this part. To run use -DPRINT
 #ifdef PRINT
     // to print only one file to prub the results  it ==10 or 100

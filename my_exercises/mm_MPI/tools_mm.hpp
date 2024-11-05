@@ -15,7 +15,7 @@
 
 template <typename T> class CMatrix {
 public:
-  std::vector<T> mat;
+  std::vector<T> matrix;
   int height, width;
   CMatrix(int height0, int width0); //: size(N),data(N*N){};
   //~CMatrix();
@@ -25,16 +25,16 @@ public:
   // print_in_parallel();
   template <typename U>
   friend std::ostream &operator<<(std::ostream &os, const CMatrix<U> &p);
-  void matresize(int new_height, int new_width,
-                 T fill_with = 0); // this function change the value of height
-                                   // and width, new size con value "fill_with"
+  void resize(int new_height, int new_width,
+              T fill_with = 0); // this function change the value of height
+                                // and width, new size con value "fill_with"
 };
 
 ////////
 // Constructor
 template <typename T>
 CMatrix<T>::CMatrix(int height0, int width0)
-    : height(height0), width(width0), mat(height0 * width0, 0) {}
+    : height(height0), width(width0), matrix(height0 * width0, 0) {}
 ///////
 ///////// fill(start, end)
 template <typename T> void CMatrix<T>::fill(T max0_to) {
@@ -43,17 +43,17 @@ template <typename T> void CMatrix<T>::fill(T max0_to) {
     std::uniform_int_distribution<int> dist(1, max0_to);
     auto generate_random_number = [&]() { return dist(engine); };
     // Llenar toda la matriz
-    std::generate(mat.begin(), mat.end(), generate_random_number);
+    std::generate(matrix.begin(), matrix.end(), generate_random_number);
   } else if constexpr (std::is_same_v<double, T>) {
     std::mt19937 engine(std::random_device{}());
     std::uniform_real_distribution<double> dist(1.0, max0_to);
     auto generate_random_number = [&]() { return dist(engine); };
-    std::generate(mat.begin(), mat.end(), generate_random_number);
+    std::generate(matrix.begin(), matrix.end(), generate_random_number);
   } else if constexpr (std::is_same_v<float, T>) {
     std::mt19937 engine(std::random_device{}());
     std::uniform_real_distribution<float> dist(1.0f, max0_to);
     auto generate_random_number = [&]() { return dist(engine); };
-    std::generate(mat.begin(), mat.end(), generate_random_number);
+    std::generate(matrix.begin(), matrix.end(), generate_random_number);
   } else {
     std::cerr << "Type no soported: only int, double and float:" << std::endl;
     exit("FAILURE");
@@ -76,216 +76,34 @@ std::ostream &operator<<(std::ostream &os, const CMatrix<U> &p) {
 ////////////// en <<
 ///////////////////// matresize() /////
 template <typename T>
-void CMatrix<T>::matresize(int new_height, int new_width, T fill_with) {
+void CMatrix<T>::resize(int new_height, int new_width, T fill_with) {
   height = new_height;
   width = new_width;
-  mat.resize(new_height * new_width, fill_with);
+  matrix.resize(new_height * new_width, fill_with);
 }
 //////////// end matresize()////////
-
-////////////////////// function to calcule the global_row() ///
-int global_row(int local_row, int rank, int npes, int N) {
-  int rows_per_process = N / npes;
-  int extra_rows = N % npes;
-  int offset =
-      rank * rows_per_process + std::min(rank, extra_rows); // whats is offset
+int global_row(int local_row, int rank, int world_size, int N) {
+  int rows_per_process = N / world_size;
+  int extra_rows = N % world_size;
+  int offset = rank * rows_per_process + std::min(rank, extra_rows);
   return local_row + offset;
 }
-////// end global_row ///
-
-//////////// main function multiply_in_parallel //////////////////
-template <typename T>
-void multiply_in_parallel(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C,
-                          int N_loc, int N, int npes,
-                          std::vector<int> row_displacements,
-                          std::vector<int> N_locs) {
-  // std::cout<<C<<std::endl;
-  //  crear the vertical columna of B
-  CMatrix<T> B_col(N, N_loc);
-  // loop for every columna of B
-  for (int col = 0; col < npes; col++) {
-    int col_start =
-        row_displacements[col];  // Starting colum index for process col
-    int col_count = N_locs[col]; // number of colums asigned to process col
-
-    /// start comunication
-    {
-      Parallel_Timer t("Comm_time mm");
-      // resize the B_col vertical B_col(N,col_count)
-      B_col.matresize(N, col_count);
-
-      // now each proces extracts the columns [col_start, col_start +
-      // col_count]; so we need to pack the data to send in the buffer
-      std::vector<T> buffer_to_send(N_loc * col_count);
-      for (int i = 0; i < N_loc; i++) {
-        for (int j = 0; j < col_count; j++) {
-          buffer_to_send[i * col_count + j] = B.mat[i * N + col_start + j];
-        }
-      }
-
-      // now prepare count and displacements to MPI_Gatherv
-      std::vector<int> recv_counts(npes);
-      std::vector<int> displacements(npes);
-      int total_recv_count = 0;
-      for (int rank = 0; rank < npes; rank++) {
-        recv_counts[rank] =
-            N_locs[rank] *
-            col_count; // Each process sends N_locs[rank]x col_count elements
-        displacements[rank] = total_recv_count;
-        total_recv_count += recv_counts[rank];
-      }
-
-      // now recive buffer to vertical col of B
-      std::vector<T> recv_buffer(total_recv_count);
-
-      // now do all gather with th enecesary colums to reconstruct the vertical
-      // colum of B remember this function is in mpi_tools.hpp
-      mpi_allgatherv(buffer_to_send, N_loc * col_count, recv_buffer,
-                     recv_counts, displacements, MPI_COMM_WORLD);
-
-      // Now we need to reconstruct the vertical col of B of size  (N x
-      // col_count)
-      int displas = 0; //(offsets)
-      for (int rank = 0; rank < npes; rank++) {
-        int rows_rank = N_locs[rank];
-        for (int i = 0; i < rows_rank; i++) {
-          int global_row = displacements[rank] + i;
-          for (int j = 0; j < col_count; j++) {
-            B_col.mat[global_row * col_count + j] =
-                recv_buffer[displas + i * col_count + j];
-          }
-        }
-        displas += rows_rank * col_count;
-      }
-
-    } /// end comunication
-
-    /// start computation
-    {
-      Parallel_Timer t("Comp_time mm");
-      // multiply A_loc (N_loc x N) with B_col(N x col_count) and store the
-      // result in C
-      for (int i = 0; i < N_loc; i++) {
-        for (int j = 0; j < col_count; j++) {
-          T sum = 0;
-          for (int k = 0; k < N; k++) {
-            sum += A.mat[i * N_loc + k] * B_col.mat[k * col_count + j];
-          }
-          // store in C[N_loc,col_count]
-          C.mat[i * N + col_start + j] = sum;
-        }
-      }
-    } /// end computation
-  } // end loop for every colum of B
-}
-//////////// end multiply in parallel ////////////////////////////
-//////////// main function multiply_in_parallel BLAS //////////////////
-template <typename T>
-void multiply_in_parallel_blas_dgemm(CMatrix<T> &A, CMatrix<T> &B,
-                                     CMatrix<T> &C, int N_loc, int N, int npes,
-                                     std::vector<int> row_displacements,
-                                     std::vector<int> N_locs) {
-  // std::cout<<C<<std::endl;
-  //  crear the vertical columna of B
-  CMatrix<T> B_col(N, N_loc);
-  // loop for every columna of B
-  for (int col = 0; col < npes; col++) {
-    int col_start =
-        row_displacements[col];  // Starting colum index for process col
-    int col_count = N_locs[col]; // number of colums asigned to process col
-
-    /// start comunication
-    {
-      Parallel_Timer t("Comm time blas");
-      // resize the B_col vertical B_col(N,col_count)
-      B_col.matresize(N, col_count);
-
-      // now each proces extracts the columns [col_start, col_start +
-      // col_count]; so we need to pack the data to send in the buffer
-      std::vector<T> buffer_to_send(N_loc * col_count);
-      for (int i = 0; i < N_loc; i++) {
-        for (int j = 0; j < col_count; j++) {
-          buffer_to_send[i * col_count + j] = B.mat[i * N + col_start + j];
-        }
-      }
-
-      // now prepare count and displacements to MPI_Gatherv
-      std::vector<int> recv_counts(npes);
-      std::vector<int> displacements(npes);
-      int total_recv_count = 0;
-      for (int rank = 0; rank < npes; rank++) {
-        recv_counts[rank] =
-            N_locs[rank] *
-            col_count; // Each process sends N_locs[rank]x col_count elements
-        displacements[rank] = total_recv_count;
-        total_recv_count += recv_counts[rank];
-      }
-
-      // now recive buffer to vertical col of B
-      std::vector<T> recv_buffer(total_recv_count);
-
-      // now do all gather with th enecesary colums to reconstruct the vertical
-      // colum of B remember this function is in mpi_tools.hpp
-      mpi_allgatherv(buffer_to_send, N_loc * col_count, recv_buffer,
-                     recv_counts, displacements, MPI_COMM_WORLD);
-
-      // Now we need to reconstruct the vertical col of B of size  (N x
-      // col_count)
-      int displas = 0; //(offsets)
-      for (int rank = 0; rank < npes; rank++) {
-        int rows_rank = N_locs[rank];
-        for (int i = 0; i < rows_rank; i++) {
-          int global_row = displacements[rank] + i;
-          for (int j = 0; j < col_count; j++) {
-            B_col.mat[global_row * col_count + j] =
-                recv_buffer[displas + i * col_count + j];
-          }
-        }
-        displas += rows_rank * col_count;
-      }
-
-    } /// end comunication
-
-    /// start computation
-    {
-      Parallel_Timer t("Comp time blas");
-      // multiply A_loc (N_loc x N) with B_col(N x col_count) and store the
-      // result in C
-
-      // Llamada a cblas_dgemm
-      std::vector<double> A_double(A.mat.begin(), A.mat.end());
-      std::vector<double> B_col_double(B_col.mat.begin(), B_col.mat.end());
-      std::vector<double> C_double(C.mat.begin(), C.mat.end());
-
-      // Llamada a cblas_dgemm
-      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N_loc, col_count,
-                  N, 1.0, A_double.data(), N, B_col_double.data(), col_count,
-                  0.0, C_double.data() + col_start, N);
-
-      // Copiar el resultado de vuelta a la matriz `int`
-      std::copy(C_double.begin(), C_double.end(), C.mat.begin());
-
-    } /// end computation
-  } // end loop for every colum of B
-}
-//////////// end multiply in parallel BLAS ////////////////////////////
-
-/////////// print in parallel ////////////////////
+////// print in parallel //////////////////
 template <typename T>
 void print_in_parallel(const CMatrix<T> &local_matrix, int rank,
-                       int world_size) {
+                       int world_size, const std::string& matrix_name) {
   int width = local_matrix.width;
-  if (width < 10) {
+  if (width < 16) {
     int local_height = local_matrix.height;
     MPI_Datatype mpi_type = get_mpi_datatype<T>();
 
     if (rank == 0) {
-      std::cout << "matrix" << std::endl;
+      std::cout << "Matrix " << matrix_name << ":" << std::endl;
       // Root process prints its own matrix
       for (int local_row = 0; local_row < local_height; ++local_row) {
         // Print the row
         for (int col = 0; col < width; ++col) {
-          std::cout << local_matrix.mat[local_row * width + col] << " ";
+          std::cout << local_matrix.matrix[local_row * width + col] << " ";
         }
         std::cout << std::endl;
       }
@@ -317,15 +135,15 @@ void print_in_parallel(const CMatrix<T> &local_matrix, int rank,
 
       // Send each row to the root
       for (int local_row = 0; local_row < local_height; ++local_row) {
-        MPI_Send(&local_matrix.mat[local_row * width], width, mpi_type, 0, 0,
+        MPI_Send(&local_matrix.matrix[local_row * width], width, mpi_type, 0, 0,
                  MPI_COMM_WORLD);
       }
     }
   } else {
-    // For width >= 11, write to binary file
+    // For width >= 16, write to binary file
     MPI_Datatype mpi_type = get_mpi_datatype<T>();
     MPI_File fh;
-    MPI_File_open(MPI_COMM_WORLD, "mm_result.bin",
+    MPI_File_open(MPI_COMM_WORLD, "matrix.bin",
                   MPI_MODE_CREATE | MPI_MODE_WRONLY, MPI_INFO_NULL, &fh);
 
     // Calculate offset in the file
@@ -340,11 +158,163 @@ void print_in_parallel(const CMatrix<T> &local_matrix, int rank,
     MPI_Offset file_offset =
         static_cast<MPI_Offset>(offset_rows * width * sizeof(T));
 
-    MPI_File_write_at_all(fh, file_offset, local_matrix.mat.data(),
+    MPI_File_write_at_all(fh, file_offset, local_matrix.matrix.data(),
                           local_matrix.height * width, mpi_type,
                           MPI_STATUS_IGNORE);
 
     MPI_File_close(&fh);
   }
 }
-////////////// end print in parallel /////////
+
+////// MM naive /////
+template <typename T>
+void multiply_parallel_naive(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C, int N,
+                             int N_loc, int Np,
+                             const std::vector<int> &row_offsets,
+                             const std::vector<int> &N_locs) {
+  // Create the vertical stripe of B (size N x N_loc)
+  CMatrix<T> B_stripe(N, N_loc);
+
+  // Loop over each vertical stripe of B
+  for (int stripe = 0; stripe < Np; ++stripe) {
+    int col_start =
+        row_offsets[stripe]; // Starting column index for process stripe
+    int col_count =
+        N_locs[stripe]; // Number of columns assigned to process stripe
+
+    {
+      Parallel_Timer t("Comm mm naive");
+      // Resize the vertical stripe of B (size N x col_count)
+      B_stripe.resize(N, col_count);
+
+      // Each process extracts the columns [col_start, col_start + col_count)
+      // from its B_local Pack data into send buffer
+      std::vector<T> sendbuf(N_loc * col_count);
+      for (int i = 0; i < N_loc; ++i) {
+        for (int j = 0; j < col_count; ++j) {
+          sendbuf[i * col_count + j] = B.matrix[i * N + col_start + j];
+        }
+      }
+
+      // Prepare counts and displacements for MPI_Allgatherv
+      std::vector<int> recvcounts(Np);
+      std::vector<int> displs(Np);
+      int total_recvcount = 0;
+      for (int p = 0; p < Np; ++p) {
+        recvcounts[p] =
+            N_locs[p] *
+            col_count; // Each process sends N_locs[p] x col_count elements
+        displs[p] = total_recvcount;
+        total_recvcount += recvcounts[p];
+      }
+
+      // Receive buffer to collect vertical stripe of B
+      std::vector<T> recvbuf(total_recvcount);
+
+      // Allgather the necessary columns to reconstruct the vertical stripe of B
+      mpi_allgatherv<T>(sendbuf, N_loc * col_count, recvbuf, recvcounts, displs,
+                        MPI_COMM_WORLD);
+
+      // Reconstruct the vertical stripe of B (size N x col_count)
+      int offset = 0;
+      for (int p = 0; p < Np; ++p) {
+        int rows_p = N_locs[p];
+        for (int i = 0; i < rows_p; ++i) {
+          int global_row = row_offsets[p] + i;
+          for (int j = 0; j < col_count; ++j) {
+            B_stripe.matrix[global_row * col_count + j] =
+                recvbuf[offset + i * col_count + j];
+          }
+        }
+        offset += rows_p * col_count;
+      }
+    }
+    {
+      Parallel_Timer t("Comp mm naive");
+      // Multiply A_local (N_loc x N) with B_stripe (N x col_count) and store
+      // directly into C
+      for (int i = 0; i < N_loc; ++i) {
+        for (int j = 0; j < col_count; ++j) {
+          T sum = 0;
+          for (int l = 0; l < N; ++l) {
+            sum += A.matrix[i * N + l] * B_stripe.matrix[l * col_count + j];
+          }
+          C.matrix[i * N + col_start + j] = sum;
+        }
+      }
+    }
+  }
+}
+
+template <typename T>
+void multiply_parallel_blas(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C, int N,
+                            int N_loc, int Np,
+                            const std::vector<int> &row_offsets,
+                            const std::vector<int> &N_locs) {
+  // Create the vertical stripe of B (size N x N_loc)
+  CMatrix<T> B_stripe(N, N_loc);
+
+  // Loop over each vertical stripe of B
+  for (int stripe = 0; stripe < Np; ++stripe) {
+    int col_start =
+        row_offsets[stripe]; // Starting column index for process stripe
+    int col_count =
+        N_locs[stripe]; // Number of columns assigned to process stripe
+
+    {
+      Parallel_Timer t("comm mm blas");
+      // Resize the vertical stripe of B (size N x col_count)
+      B_stripe.resize(N, col_count);
+
+      // Each process extracts the columns [col_start, col_start + col_count)
+      // from its B_local Pack data into send buffer
+      std::vector<T> sendbuf(N_loc * col_count);
+      for (int i = 0; i < N_loc; ++i) {
+        for (int j = 0; j < col_count; ++j) {
+          sendbuf[i * col_count + j] = B.matrix[i * N + col_start + j];
+        }
+      }
+
+      // Prepare counts and displacements for MPI_Allgatherv
+      std::vector<int> recvcounts(Np);
+      std::vector<int> displs(Np);
+      int total_recvcount = 0;
+      for (int p = 0; p < Np; ++p) {
+        recvcounts[p] =
+            N_locs[p] *
+            col_count; // Each process sends N_locs[p] x col_count elements
+        displs[p] = total_recvcount;
+        total_recvcount += recvcounts[p];
+      }
+
+      // Receive buffer to collect vertical stripe of B
+      std::vector<T> recvbuf(total_recvcount);
+
+      // Allgather the necessary columns to reconstruct the vertical stripe of B
+      mpi_allgatherv<T>(sendbuf, N_loc * col_count, recvbuf, recvcounts, displs,
+                        MPI_COMM_WORLD);
+
+      // Reconstruct the vertical stripe of B (size N x col_count)
+      int offset = 0;
+      for (int p = 0; p < Np; ++p) {
+        int rows_p = N_locs[p];
+        for (int i = 0; i < rows_p; ++i) {
+          int global_row = row_offsets[p] + i;
+          for (int j = 0; j < col_count; ++j) {
+            B_stripe.matrix[global_row * col_count + j] =
+                recvbuf[offset + i * col_count + j];
+          }
+        }
+        offset += rows_p * col_count;
+      }
+    }
+    {
+      Parallel_Timer t("comp mm blas");
+      // Multiply A_local (N_loc x N) with B_stripe (N x col_count) and store
+      // directly into C
+      cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N_loc, col_count,
+                  N, 1.0, A.matrix.data(), N, B_stripe.matrix.data(), col_count,
+                  0.0, &C.matrix[col_start], N);
+    }
+  }
+}

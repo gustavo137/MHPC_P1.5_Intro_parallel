@@ -10,7 +10,10 @@ int main(int argc, char **argv){
 
   // Things to the matriz
   std::vector<double> conini = {0, 100};
-  size_t dim{12000}; // 100// for leonardo set 12000
+  size_t dim{9}; // 100// for leonardo set 12000
+  if(argc>1){
+   dim=std::stoi(argv[1]);
+  }
   size_t ite{1000};// leonardo 1000
   size_t printInterval{200};
 

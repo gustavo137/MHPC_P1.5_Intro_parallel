@@ -41,12 +41,12 @@ int main(int argc, char **argv) {
   //
 
   {
-    Parallel_Timer t("Matrix mult.");
+    Parallel_Timer t("mm naive.");
     multiply_parallel_naive(A, B, C, N, N_loc, npes, row_offsets, N_locs);
   }
 
   {
-    Parallel_Timer t("Matrix mult. blas");
+    Parallel_Timer t("mm blas");
     multiply_parallel_blas(A, B, D, N, N_loc, npes, row_offsets, N_locs);
   }
   print_in_parallel(C,rank,npes,"C naiv");

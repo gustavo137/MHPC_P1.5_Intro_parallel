@@ -14,6 +14,7 @@
 #include <random>
 #include <type_traits>
 #include "Parallel_Timer.hpp"
+#include "mpi_tools.hpp"
 #include <cblas.h> // use -lblas to compile time 
 
 // Función auxiliar para obtener el tipo de datos de MPI correspondiente al tipo T
@@ -120,5 +121,82 @@ void gather_and_print_matrix(const CMatrix<T>& local_matrix, int BLOCK_SIZE, int
     }
 }
 
-#endif // TOOLS_HPP
-
+void multiply_cannon(CMatrix<double>& A, CMatrix<double>& B, CMatrix<double>& C, int N, MPI_Comm comm_cart) {
+     int myrank;
+     MPI_Comm_rank(comm_cart, &myrank);
+ 
+     int dims[2], periods[2], coords[2];
+     MPI_Cart_get(comm_cart, 2, dims, periods, coords);
+ 
+     int q = dims[0]; // Number of processes in one dimension
+ 
+     int N_loc = N / q; // Local matrix size
+ 
+     // Get ranks of neighbors for shifts
+     int left, right, up, down;
+     MPI_Cart_shift(comm_cart, 1, coords[0], &left, &right); // Shift along columns (left/right)
+     MPI_Cart_shift(comm_cart, 0, coords[1], &up, &down);    // Shift along rows (up/down)
+ 
+     // Prepare the buffers for communication
+     std::vector<double> sendbufA(N_loc * N_loc);
+     std::vector<double> sendbufB(N_loc * N_loc);
+     std::vector<double> recvbufA(N_loc * N_loc);
+     std::vector<double> recvbufB(N_loc * N_loc);
+ 
+     {
+         Parallel_Timer t("comm 1 cannon");
+         // Initial alignment
+         // Shift A left by coords[0] steps
+         MPI_Sendrecv_replace(A.matrix.data(), N_loc * N_loc, MPI_DOUBLE,
+             left, 0, right, 0, comm_cart, MPI_STATUS_IGNORE);
+ 
+         // Shift B up by coords[1] steps
+         MPI_Sendrecv_replace(B.matrix.data(), N_loc * N_loc, MPI_DOUBLE,
+             up, 0, down, 0, comm_cart, MPI_STATUS_IGNORE);
+ 
+         // Copy the initial A and B blocks into send buffers
+         std::copy(A.matrix.begin(), A.matrix.end(), sendbufA.begin());
+         std::copy(B.matrix.begin(), B.matrix.end(), sendbufB.begin());
+     }
+ 
+     MPI_Cart_shift(comm_cart, 1, 1, &left, &right); // Shift along columns (left/right)
+     MPI_Cart_shift(comm_cart, 0, 1, &up, &down);    // Shift along rows (up/down)
+ 
+     for (int step = 0; step < q; step++) {
+         // Start non-blocking sends and receives
+         MPI_Request send_req_A, recv_req_A, send_req_B, recv_req_B;
+ 
+         // Send A left, receive from right
+         MPI_Isend(sendbufA.data(), N_loc * N_loc, MPI_DOUBLE, left, 0, comm_cart, &send_req_A);
+        MPI_Irecv(recvbufA.data(), N_loc * N_loc, MPI_DOUBLE, right, 0, comm_cart, &recv_req_A);
+ 
+         // Send B up, receive from down
+         MPI_Isend(sendbufB.data(), N_loc * N_loc, MPI_DOUBLE, up, 0, comm_cart, &send_req_B);
+         MPI_Irecv(recvbufB.data(), N_loc * N_loc, MPI_DOUBLE, down, 0, comm_cart, &recv_req_B);
+ 
+         {
+            Parallel_Timer t("comp cannon");
+             // Compute C += A * B
+             cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
+                 N_loc, N_loc, N_loc,
+                1.0,
+                 sendbufA.data(), N_loc,
+                 sendbufB.data(), N_loc,
+                 1.0,
+                 C.matrix.data(), N_loc);
+         }
+         {
+             Parallel_Timer t("comm 2 cannon");
+             // Wait for communication to complete
+             MPI_Wait(&send_req_A, MPI_STATUS_IGNORE);
+             MPI_Wait(&recv_req_A, MPI_STATUS_IGNORE);
+             MPI_Wait(&send_req_B, MPI_STATUS_IGNORE);
+             MPI_Wait(&recv_req_B, MPI_STATUS_IGNORE);
+         }
+ 
+         // Swap received buffers with send buffers for next iteration
+         std::swap(sendbufA, recvbufA);
+         std::swap(sendbufB, recvbufB);
+     }
+ }
+#endif

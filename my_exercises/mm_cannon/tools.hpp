@@ -182,7 +182,7 @@ void multiply_cannon(CMatrix<double> &A, CMatrix<double> &B, CMatrix<double> &C,
       Parallel_Timer t("comp time cannon");
       // Compute C += A * B
       cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N_loc, N_loc,
-                  N_loc, 1.0, sendbufA.data(), N_loc, sendbufB.data(), N_loc,
+                  N_loc, 1.0, send_buf_A.data(), N_loc, send_buf_B.data(), N_loc,
                   1.0, C.matrix.data(), N_loc);
     }
 

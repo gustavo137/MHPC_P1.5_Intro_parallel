@@ -90,8 +90,8 @@ int global_row(int local_row, int rank, int world_size, int N) {
 }
 ////// print in parallel //////////////////
 template <typename T>
-void print_in_parallel(const CMatrix<T> &local_matrix, int rank,
-                       int world_size, const std::string& matrix_name) {
+void print_in_parallel(const CMatrix<T> &local_matrix, int rank, int world_size,
+                       const std::string &matrix_name) {
   int width = local_matrix.width;
   if (width < 10) {
     int local_height = local_matrix.height;
@@ -171,65 +171,76 @@ void multiply_parallel_naive(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C, int N,
                              int N_loc, int Np,
                              const std::vector<int> &row_offsets,
                              const std::vector<int> &N_locs) {
-    // Crear una submatriz "stripe" de B para el proceso actual
-    CMatrix<T> B_stripe(N, N); // Ajuste para asegurar tamaño adecuado
+  // Crear una submatriz "stripe" de B para el proceso actual
+  CMatrix<T> B_stripe(N, N); // Ajuste para asegurar tamaño adecuado
 
-    // Preparar vectores para recvcounts y displs para MPI_Allgatherv
-    std::vector<int> recvcounts(Np);
-    std::vector<int> displs(Np);
-    int total_recvcount = 0;
+  // Preparar vectores para recvcounts y displs para MPI_Allgatherv
+  std::vector<int> recvcounts(Np);
+  std::vector<int> displs(Np);
+  int total_recvcount = 0;
 
-    for (int p = 0; p < Np; ++p) {
-        recvcounts[p] = N_locs[p] * N; // Número de elementos recibidos desde cada proceso
-        displs[p] = total_recvcount;
-        total_recvcount += recvcounts[p];
-    }
-
+  for (int p = 0; p < Np; ++p) {
+    recvcounts[p] =
+        N_locs[p] * N; // Número de elementos recibidos desde cada proceso
+    displs[p] = total_recvcount;
+    total_recvcount += recvcounts[p];
+  }
+  {
+    Parallel_Timer t("mm naive comm_time ");
     // Recolectar las columnas necesarias de B para cada proceso
     MPI_Allgatherv(B.matrix.data(), N_loc * N, get_mpi_datatype<T>(),
                    B_stripe.matrix.data(), recvcounts.data(), displs.data(),
                    get_mpi_datatype<T>(), MPI_COMM_WORLD);
-
+  }
+  {
+    Parallel_Timer t("mm naive comp_time ");
     // Multiplicación de matrices: A_local (N_loc x N) * B_stripe (N x N)
-    for (int i = 0; i < N_loc; ++i) {           // Filas de A asignadas a este proceso
-        for (int j = 0; j < N; ++j) {           // Columnas de B
-            T sum = 0;
-            for (int k = 0; k < N; ++k) {       // Bucle sobre columnas de A y filas de B
-                sum += A.matrix[i * N + k] * B_stripe.matrix[k * N + j];
-            }
-            // Guardar el resultado en la posición correspondiente de C
-            C.matrix[i * N + j] = sum;
+    for (int i = 0; i < N_loc; ++i) { // Filas de A asignadas a este proceso
+      for (int j = 0; j < N; ++j) {   // Columnas de B
+        T sum = 0;
+        for (int k = 0; k < N; ++k) { // Bucle sobre columnas de A y filas de B
+          sum += A.matrix[i * N + k] * B_stripe.matrix[k * N + j];
         }
+        // Guardar el resultado en la posición correspondiente de C
+        C.matrix[i * N + j] = sum;
+      }
     }
+  }
 }
 template <typename T>
 void multiply_parallel_blas(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C, int N,
                             int N_loc, int Np,
                             const std::vector<int> &row_offsets,
                             const std::vector<int> &N_locs) {
-    // Crear una submatriz "stripe" de B con tamaño adecuado para el proceso actual
-    CMatrix<T> B_stripe(N, N);
+  // Crear una submatriz "stripe" de B con tamaño adecuado para el proceso
+  // actual
+  CMatrix<T> B_stripe(N, N);
 
-    // Preparar vectores para recvcounts y displs para MPI_Allgatherv
-    std::vector<int> recvcounts(Np);
-    std::vector<int> displs(Np);
-    int total_recvcount = 0;
+  // Preparar vectores para recvcounts y displs para MPI_Allgatherv
+  std::vector<int> recvcounts(Np);
+  std::vector<int> displs(Np);
+  int total_recvcount = 0;
 
-    for (int p = 0; p < Np; ++p) {
-        recvcounts[p] = N_locs[p] * N; // Número de elementos recibidos desde cada proceso
-        displs[p] = total_recvcount;
-        total_recvcount += recvcounts[p];
-    }
-
+  for (int p = 0; p < Np; ++p) {
+    recvcounts[p] =
+        N_locs[p] * N; // Número de elementos recibidos desde cada proceso
+    displs[p] = total_recvcount;
+    total_recvcount += recvcounts[p];
+  }
+  {
+    Parallel_Timer t("mm blas comm_time ");
     // Recolectar las columnas necesarias de B para cada proceso
     MPI_Allgatherv(B.matrix.data(), N_loc * N, get_mpi_datatype<T>(),
                    B_stripe.matrix.data(), recvcounts.data(), displs.data(),
                    get_mpi_datatype<T>(), MPI_COMM_WORLD);
-
+  }
+  {
+    Parallel_Timer t("mm blas comp_time");
     // Multiplicación de matrices usando BLAS (cblas_dgemm)
-    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
-                N_loc, N, N, 1.0, A.matrix.data(), N,
-                B_stripe.matrix.data(), N, 0.0, C.matrix.data(), N);
+    cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, N_loc, N, N, 1.0,
+                A.matrix.data(), N, B_stripe.matrix.data(), N, 0.0,
+                C.matrix.data(), N);
+  }
 }
 
 /////////////////////////
@@ -245,20 +256,23 @@ void multiply_parallel_naive(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C, int N,
 
     // Bucle sobre cada bloque de B, correspondiente a los diferentes procesos
     for (int stripe = 0; stripe < Np; ++stripe) {
-        int col_start = row_offsets[stripe]; // Índice inicial de la columna para este bloque de B
-        int col_count = N_locs[stripe];      // Número de columnas en este bloque de B
+        int col_start = row_offsets[stripe]; // Índice inicial de la columna
+para este bloque de B int col_count = N_locs[stripe];      // Número de columnas
+en este bloque de B
 
         // Redimensionar B_stripe y recolectar las columnas necesarias de B
         B_stripe.resize(N, col_count);
-        gather_B_stripe(B, B_stripe, col_start, col_count, N_loc, N, Np, row_offsets, N_locs);
+        gather_B_stripe(B, B_stripe, col_start, col_count, N_loc, N, Np,
+row_offsets, N_locs);
 
-        // Multiplicación de matrices: A_local (N_loc x N) * B_stripe (N x col_count)
+        // Multiplicación de matrices: A_local (N_loc x N) * B_stripe (N x
+col_count)
         // Guardar el resultado en C
-        for (int i = 0; i < N_loc; ++i) {          // Filas de A asignadas a este proceso
-            for (int j = 0; j < col_count; ++j) {  // Columnas de B en el bloque actual
-                T sum = 0;
-                for (int l = 0; l < N; ++l) {      // Bucle sobre columnas de A y filas de B
-                    sum += A.matrix[i * N + l] * B_stripe.matrix[l * col_count + j];
+        for (int i = 0; i < N_loc; ++i) {          // Filas de A asignadas a
+este proceso for (int j = 0; j < col_count; ++j) {  // Columnas de B en el
+bloque actual T sum = 0; for (int l = 0; l < N; ++l) {      // Bucle sobre
+columnas de A y filas de B sum += A.matrix[i * N + l] * B_stripe.matrix[l *
+col_count + j];
                 }
                 // Guardar el resultado en la posición correspondiente de C
                 C.matrix[i * N + col_start + j] = sum;
@@ -281,7 +295,8 @@ void multiply_parallel_blas(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C, int N,
 
         // Redimensionar B_stripe y recolectar las columnas necesarias de B
         B_stripe.resize(N, col_count);
-        gather_B_stripe(B, B_stripe, col_start, col_count, N_loc, N, Np, row_offsets, N_locs);
+        gather_B_stripe(B, B_stripe, col_start, col_count, N_loc, N, Np,
+row_offsets, N_locs);
 
         // Multiplicación de matrices usando la función de BLAS (cblas_dgemm)
         cblas_dgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans,
@@ -291,11 +306,11 @@ void multiply_parallel_blas(CMatrix<T> &A, CMatrix<T> &B, CMatrix<T> &C, int N,
     }
 }
 
-// Función auxiliar para recolectar el bloque de columnas (stripe) de B para cada proceso
-template <typename T>
-void gather_B_stripe(const CMatrix<T> &B, CMatrix<T> &B_stripe, int col_start, int col_count,
-                     int N_loc, int N, int Np,
-                     const std::vector<int> &row_offsets, const std::vector<int> &N_locs) {
+// Función auxiliar para recolectar el bloque de columnas (stripe) de B para
+cada proceso template <typename T> void gather_B_stripe(const CMatrix<T> &B,
+CMatrix<T> &B_stripe, int col_start, int col_count, int N_loc, int N, int Np,
+                     const std::vector<int> &row_offsets, const std::vector<int>
+&N_locs) {
     // Preparar el búfer de envío para enviar solo las columnas necesarias de B
     std::vector<T> sendbuf(N_loc * col_count);
     for (int i = 0; i < N_loc; ++i) {
@@ -318,7 +333,8 @@ void gather_B_stripe(const CMatrix<T> &B, CMatrix<T> &B_stripe, int col_start, i
     std::vector<T> recvbuf(total_recvcount);
 
     // Ejecutar MPI_Allgatherv para recopilar el bloque completo de B en recvbuf
-    mpi_allgatherv<T>(sendbuf, N_loc * col_count, recvbuf, recvcounts, displs, MPI_COMM_WORLD);
+    mpi_allgatherv<T>(sendbuf, N_loc * col_count, recvbuf, recvcounts, displs,
+MPI_COMM_WORLD);
 
     // Llenar B_stripe con los datos recolectados de recvbuf
     int offset = 0;
@@ -327,7 +343,8 @@ void gather_B_stripe(const CMatrix<T> &B, CMatrix<T> &B_stripe, int col_start, i
         for (int i = 0; i < rows_p; ++i) {
             int global_row = row_offsets[p] + i;
             for (int j = 0; j < col_count; ++j) {
-                B_stripe.matrix[global_row * col_count + j] = recvbuf[offset + i * col_count + j];
+                B_stripe.matrix[global_row * col_count + j] = recvbuf[offset + i
+* col_count + j];
             }
         }
         offset += rows_p * col_count;

@@ -7,4 +7,4 @@
 *.datjacobiParallel
 *.datjacobiMPI2
 *.datjacobiMPI4
-
+*.o

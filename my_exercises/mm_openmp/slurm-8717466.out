@@ -1,0 +1,41 @@
+Running jacobi using openmp for size=10000
+num threads = 4
+Duration for 'Matrix mult.': 324755 micro s
+
+Timing results:
+Matrix mult. - Total time: 324755 ms, Calls: 1
+num threads = 8
+Duration for 'Matrix mult.': 172591 micro s
+
+Timing results:
+Matrix mult. - Total time: 172591 ms, Calls: 1
+num threads = 12
+Duration for 'Matrix mult.': 117587 micro s
+
+Timing results:
+Matrix mult. - Total time: 117587 ms, Calls: 1
+num threads = 16
+Duration for 'Matrix mult.': 92747 micro s
+
+Timing results:
+Matrix mult. - Total time: 92747 ms, Calls: 1
+num threads = 20
+Duration for 'Matrix mult.': 76771 micro s
+
+Timing results:
+Matrix mult. - Total time: 76771 ms, Calls: 1
+num threads = 24
+Duration for 'Matrix mult.': 66546 micro s
+
+Timing results:
+Matrix mult. - Total time: 66546 ms, Calls: 1
+num threads = 28
+Duration for 'Matrix mult.': 61682 micro s
+
+Timing results:
+Matrix mult. - Total time: 61682 ms, Calls: 1
+num threads = 32
+Duration for 'Matrix mult.': 59486 micro s
+
+Timing results:
+Matrix mult. - Total time: 59486 ms, Calls: 1

@@ -9,9 +9,9 @@
 #SBATCH -p boost_usr_prod
 
 echo "Running mm N32"
-module load gcc/12.2.0
-module load openmpi/4.1.6--gcc--12.2.0
+module load gcc
+module load openmpi
 module load openblas
-mpic++ -O3 main.cpp -o main.x -I. -lblas 
+mpic++ -O3 main.cpp -o main.x -I. -lopenblas 
 
 mpirun -np 1024 ./main.x 5000

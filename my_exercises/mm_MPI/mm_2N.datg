@@ -1,0 +1,8 @@
+Running mm N2
+Timing Statistics:
+mm blas comm_time  Avg: 730472 micro_s
+mm blas comp_time Avg: 117974 micro_s
+mm blas total_time  Avg: 943924 micro_s
+mm naive comm_time  Avg: 229498 micro_s
+mm naive comp_time  Avg: 1.22075e+07 micro_s
+mm naive total_time  Avg: 1.25452e+07 micro_s

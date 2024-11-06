@@ -1,0 +1,5 @@
+Running cannon N100
+Comm time = total time - comp time.
+Timing Statistics:
+comp time cannon Avg: 49545.5 micro_s
+total time cannon blas Avg: 131687 micro_s

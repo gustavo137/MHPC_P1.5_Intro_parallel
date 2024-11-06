@@ -1,0 +1,6 @@
+Running jacobiMPI 2
+Remember comp_time = comp_time - comm_time 
+Timing Statistics:
+Comm time:  Avg: 535091 micro_s
+Computation time Avg: 9.5127e+06 micro_s
+Total_Time Avg: 9.54027e+06 micro_s

@@ -1,0 +1,8 @@
+Running mm N8
+Timing Statistics:
+mm blas comm_time  Avg: 752479 micro_s
+mm blas comp_time Avg: 65066.2 micro_s
+mm blas total_time  Avg: 924170 micro_s
+mm naive comm_time  Avg: 536614 micro_s
+mm naive comp_time  Avg: 3.01244e+06 micro_s
+mm naive total_time  Avg: 3.65864e+06 micro_s

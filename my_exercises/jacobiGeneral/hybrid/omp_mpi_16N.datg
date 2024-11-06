@@ -1,0 +1,5 @@
+Running jacobiMPI N16 ibrid
+Timing Statistics:
+Calculation_Time Avg: 859952 micro_s
+Comunication_Time Avg: 362154 micro_s
+Total_Time Avg: 1.22495e+06 micro_s

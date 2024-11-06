@@ -1,0 +1,5 @@
+Running jacobiMPI N64 ibrid
+Timing Statistics:
+Calculation_Time Avg: 75949.5 micro_s
+Comunication_Time Avg: 424295 micro_s
+Total_Time Avg: 503490 micro_s

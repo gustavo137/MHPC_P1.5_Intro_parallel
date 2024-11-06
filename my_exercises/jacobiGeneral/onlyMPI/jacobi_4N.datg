@@ -1,0 +1,5 @@
+Running jacobiMPI 4
+Timing Statistics:
+Calculation_Time Avg: 4.11681e+06 micro_s
+Comunication_Time Avg: 859693 micro_s
+Total_Time Avg: 4.98378e+06 micro_s

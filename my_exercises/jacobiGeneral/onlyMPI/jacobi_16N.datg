@@ -1,0 +1,5 @@
+Running jacobiMPI 16
+Timing Statistics:
+Calculation_Time Avg: 882458 micro_s
+Comunication_Time Avg: 301707 micro_s
+Total_Time Avg: 1.18719e+06 micro_s

@@ -1,0 +1,8 @@
+Running mm N32
+Timing Statistics:
+mm blas comm_time  Avg: 184566 micro_s
+mm blas comp_time Avg: 55929.2 micro_s
+mm blas total_time  Avg: 395794 micro_s
+mm naive comm_time  Avg: 182065 micro_s
+mm naive comp_time  Avg: 749128 micro_s
+mm naive total_time  Avg: 1.08449e+06 micro_s

@@ -1,0 +1,5 @@
+Running jacobiMPI N32 ibrid
+Timing Statistics:
+Calculation_Time Avg: 268912 micro_s
+Comunication_Time Avg: 291720 micro_s
+Total_Time Avg: 562865 micro_s

@@ -1,0 +1,8 @@
+Running mm N16
+Timing Statistics:
+mm blas comm_time  Avg: 231458 micro_s
+mm blas comp_time Avg: 56481.3 micro_s
+mm blas total_time  Avg: 444634 micro_s
+mm naive comm_time  Avg: 174360 micro_s
+mm naive comp_time  Avg: 1.5003e+06 micro_s
+mm naive total_time  Avg: 1.82429e+06 micro_s

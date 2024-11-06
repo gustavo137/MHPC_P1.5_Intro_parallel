@@ -1,0 +1,5 @@
+Running jacobiMPI N1 ibrid
+Timing Statistics:
+Calculation_Time Avg: 1.85093e+07 micro_s
+Comunication_Time Avg: 510333 micro_s
+Total_Time Avg: 1.90321e+07 micro_s

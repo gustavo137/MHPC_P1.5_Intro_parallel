@@ -1,0 +1,6 @@
+Running jacobiMPI N16 hybrid overlap
+Remember comp_time = comp_time - comm_time 
+Timing Statistics:
+Comm time:  Avg: 223236 micro_s
+Computation time Avg: 1.00985e+06 micro_s
+Total_Time Avg: 1.01975e+06 micro_s

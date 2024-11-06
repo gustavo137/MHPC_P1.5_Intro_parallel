@@ -1,0 +1,6 @@
+Running jacobi 4
+Remember comp_time = comp_time - comm_time 
+Timing Statistics:
+Comm time:  Avg: 6.71036e+06 micro_s
+Computation time Avg: 2.02145e+07 micro_s
+Total_Time Avg: 2.02669e+07 micro_s

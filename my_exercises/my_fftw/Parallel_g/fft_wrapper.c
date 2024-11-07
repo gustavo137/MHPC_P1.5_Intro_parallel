@@ -16,6 +16,10 @@
 #include <string.h>
 #include "utilities.h"
 
+#include <fftw3-mpi.h>
+#include <sys/time.h>
+#include <complex.h>
+
 double seconds(){
 
   /* 
@@ -37,7 +41,8 @@ double seconds(){
  * http://www.fftw.org/doc/Row_002dmajor-Format.html#Row_002dmajor-Format
  *
  */
-int index_f ( int i1, int i2, int i3, int n1, int n2, int n3)
+//int index_f ( int i1, int i2, int i3, int n1, int n2, int n3)
+int index_f ( int i1, int i2, int i3, int n2, int n3)
 {
   return n3*n2*i1 + n3*i2 + i3; 
 }
@@ -50,7 +55,7 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    * See also: http://www.fftw.org/doc/MPI-Initialization.html
    */
   fftw_mpi_init();
-  fft->mpi_comm = comm;
+  fft->mpi_comm = mpi_comm;
 
   /*
    *  Allocate a distributed grid for complex FFT using aligned memory allocation
@@ -59,15 +64,31 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    *  HINT: the allocation size is given by fftw_mpi_local_size_3d (see also http://www.fftw.org/doc/MPI-Data-Distribution-Functions.html)
    *
    */
-  fft->fftw_data = ( fftw_complex* ) fftw_malloc( fft->local_size_grid * sizeof( fftw_complex ) );
+   //<<<<<<<<--------
+   ptrdiff_t global_size_grid, local_size_grid, local_n1, local_n1_offset;
+   global_size_grid = n1*n2*n3;
+   fft->global_size_grid = global_size_grid;
+   local_size_grid = fftw_mpi_local_size_3d(n1,n2,n3,mpi_comm,&local_n1,&local_n1_offset);
+   fft->local_size_grid = local_size_grid;
+   fft->local_n1 = local_n1;
+   fft->local_n1_offset = local_n1_offset; 
 
+
+   //<<<<<<<---------
+
+  //Allocate the fftw_data
+  fft->fftw_data = ( fftw_complex* ) fftw_malloc(local_size_grid * sizeof( fftw_complex ) );
+  if(fft->fftw_data==NULL){
+    fprintf(stderr,"Error allocating memory in fftw_data in wrapper");
+    MPI_Abort(fft->mpi_comm,1);//<<<-1 
+   }
   /*
    * Create an FFTW plan for a distributed FFT grid
    * Use fftw_mpi_plan_dft_3d: http://www.fftw.org/doc/MPI-Plan-Creation.html#MPI-Plan-Creation
    *
    */
-  fft->fw_plan = NULL;
-  fft->bw_plan = NULL;
+  fft->fw_plan = fftw_mpi_plan_dft_3d(n1,n2,n3,fft->fftw_data,fft->fftw_data,mpi_comm,FFTW_FORWARD,FFTW_MEASURE);// NULL;
+  fft->bw_plan = fftw_mpi_plan_dft_3d(n1,n2,n3,fft->fftw_data,fft->fftw_data,mpi_comm,FFTW_BACKWARD,FFTW_MEASURE);//NULL;
 
 }
 
@@ -106,27 +127,40 @@ void fft_3d(fftw_mpi_handler* fft, int n1, int n2, int n3, double *data_direct, 
     // Now distinguish in which direction the FFT is performed
     if ( direct_to_reciprocal)
       {
-	for(i = 0; i < n1*n2*n3; i++)
+        fftw_complex *input = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * fft->local_size_grid);//<<<-----
+        if (input == NULL) {
+            fprintf(stderr, "Error allocating memory for FFTW input data.\n");
+            MPI_Abort(fft->mpi_comm, -1);
+        }
+	for(i = 0; i < fft->local_size_grid; i++)//<<--
 	  {
 	    fft->fftw_data[i]  = data_direct[i] + 0.0 * I;
 	  } 
-	
-	fftw_execute_dft(fft->fw_plan, fft->fftw_data, fft->fftw_data);
+	//fftw_execute_dft(fft->fw_plan, fft->fftw_data, fft->fftw_data);
+	fftw_mpi_execute_dft(fft->fw_plan, input, data_rec);//<<--
 
-	memcpy(data_rec, fft->fftw_data, n1*n2*n3*sizeof(fftw_complex)); 
+	//memcpy(data_rec, fft->fftw_data, n1*n2*n3*sizeof(fftw_complex)); 
+        fftw_free(input);       
       }
     else
       {
-	memcpy(fft->fftw_data, data_rec, n1*n2*n3*sizeof(fftw_complex));
-	  
-	fftw_execute_dft(fft->bw_plan, fft->fftw_data, fft->fftw_data);
-	
+	//memcpy(fft->fftw_data, data_rec, n1*n2*n3*sizeof(fftw_complex));
+        fftw_complex *output = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * fft->local_size_grid);
+        if (output == NULL) {
+            fprintf(stderr, "Error allocating memory for FFTW output data.\n");
+            MPI_Abort(fft->mpi_comm, -1);
+        }	  
+  
+	//fftw_execute_dft(fft->bw_plan, fft->fftw_data, fft->fftw_data);
+	fftw_mpi_execute_dft(fft->bw_plan,data_rec,output);
 	fac = 1.0 / ( n1 * n2 * n3 );
 	
-	for( i = 0; i < n1 * n2 * n3; ++i )
+	for( i = 0; i <fft->local_size_grid; ++i )
 	  {
-	    data_direct[i] = creal(fft->fftw_data[i])*fac;
+	    //data_direct[i] = creal(fft->fftw_data[i])*fac;
+            data_direct[i] = creal(output[i])*fac;
 	  }
+       fftw_free(output);
       }
 }
 

@@ -20,12 +20,16 @@
 #include <complex.h>
 #include <fftw3.h>
 #include "utilities.h"
+//
+#include <mpi.h>
+#include <fftw3-mpi.h>
+//
 // HINT: include mpi and fftw3-mpi 
 //       http://www.fftw.org/doc/MPI-Files-and-Data-Types.html#MPI-Files-and-Data-Types
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
-int main(){
+int main(int argc, char **argv){
 
     // Dimensions of the system
     double L1 = 10., L2 = 10., L3 = 20.;
@@ -44,24 +48,29 @@ int main(){
     double *diffusivity, *conc, *dconc, *aux1, *aux2;
    
     int i1, i2, i3, ipol, istep, index;
-  
+    int i1_local;//  <<-----
     double f1conc, f2conc, f3conc, f1diff, f2diff, f3diff, fac, ss;
     double x1, x2 , x3, rr, r2mean;
+    double ss_local,r2mean_local; //<<--
     fftw_mpi_handler fft_h;
 
     /* 
      * Initializzation of the MPI environment 
      *
      */
-
+     MPI_Init(&argc, &argv);
+     int rank;
+     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
     /*
      * initialize the fftw system and local dimension
      * as the value returned from the parallel FFT grid initializzation 
      *
      */
     init_fftw( &fft_h, n1, n2, n3, MPI_COMM_WORLD);
-
-  
+    ptrdiff_t local_n1 = fft_h.local_n1;
+    ptrdiff_t local_n1_offset = fft_h.local_n1_offset;
+    ptrdiff_t local_size_grid = fft_h.local_size_grid;
+     
     /*
      * Allocate distribute memory arrays
      * HINT: the arrays need to be distributed, so you have to set the correct sizes 
@@ -71,12 +80,18 @@ int main(){
      * More hints are reported into the fft_wrapper.c file where the fft_init_mpi is defined
      *
      */
-    diffusivity = (double*)malloc(n1*n2*n3*sizeof(double));
-    conc = (double*)malloc(n1*n2*n3*sizeof(double));
-    dconc = (double*)malloc(n1*n2*n3*sizeof(double));
-    aux1 = (double*)malloc(n1*n2*n3*sizeof(double));
-    aux2 = (double*)malloc(n1*n2*n3*sizeof(double));
+    diffusivity = (double*)malloc(local_size_grid*sizeof(double));
+    conc = (double*)malloc(local_size_grid*sizeof(double));
+    dconc = (double*)malloc(local_size_grid*sizeof(double));
+    aux1 = (double*)malloc(local_size_grid*sizeof(double));
+    aux2 = (double*)malloc(local_size_grid*sizeof(double));
 
+    // good allocation
+    // Check for successful allocation
+   /* if (!diffusivity || !conc || !dconc || !aux1 || !aux2) {
+      fprintf(stderr, "Memory allocation failed.\n");
+      MPI_Abort(MPI_COMM_WORLD, -1);
+    }*/
 
     /* 
      * Define the diffusivity inside the system and 
@@ -91,7 +106,7 @@ int main(){
     for (i3 = 0; i3 < n3; ++i3)
       {  
 	x3=L3*((double)i3)/n3;
-	f3diff = exp( -pow((x3-0.5*L3)/rad_diff,2));
+	f3diff = exp( -pow((x3-0.5*L3)/rad_diff,2)); //<<--- for more faster remove the pow()
 	f3conc = exp( -pow((x3-0.5*L3)/rad_conc,2));
 	
 	
@@ -102,13 +117,14 @@ int main(){
             f2conc = exp( -pow((x2-0.5*L2)/rad_conc,2));
 	    
 	
-	    for (i1 = 0; i1 < n1; ++i1)
+	    for (i1_local = 0; i1_local < local_n1; ++i1_local)//<< --- change 
 	      {
+                i1 = i1_local + local_n1_offset;
 		x1=L1*((double)i1)/n1;
 		f1diff = exp( -pow((x1-0.5*L1)/rad_diff,2));
 		f1conc = exp( -pow((x1-0.5*L1)/rad_conc,2));
 		
-		index = index_f(i1, i2, i3, n1, n2, n3);
+		index = index_f(i1_local, i2, i3, n2, n3);//<<--
 		diffusivity[index]  = MAX( f1diff * f2diff, f2diff * f3diff);
 		conc[index] = f1conc * f2conc * f3conc;
 		ss += conc[index]; 
@@ -121,9 +137,9 @@ int main(){
      * HINT: The parallel version of  the output routines is provided in the mpi_output_routines folder
      *
      */
-    plot_data_2d("diffusivity", n1, n2, n3, 1, diffusivity);
-    plot_data_2d("diffusivity", n1, n2, n3, 2, diffusivity);
-    plot_data_2d("diffusivity", n1, n2, n3, 3, diffusivity);
+    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 1, diffusivity);//<<--
+    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 2, diffusivity);//<<--
+    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 3, diffusivity);//<<--
     
     
     fac= L1*L2*L3/(n1*n2*n3);
@@ -135,8 +151,11 @@ int main(){
      *      ss = 1.0/(ss*fac);
      *
      */
-    ss = 1.0/(ss*fac);
-    for (i1=0; i1< n1*n2*n3; ++i1)
+    double ss_global;
+    MPI_Allreduce(&ss, &ss_global,1,MPI_DOUBLE,MPI_SUM, MPI_COMM_WORLD);//<<--- 
+    
+    ss = 1.0/(ss_global*fac);//<<---
+    for (i1=0; i1< local_size_grid; ++i1)//<<--
       conc[i1]*=ss;
       
     /*
@@ -149,28 +168,28 @@ int main(){
     start = seconds();
     for (istep = 1; istep <= nstep; ++istep)
       {
-        for (i1=0; i1< n1*n2*n3; ++i1)
+        for (i1=0; i1< local_size_grid; ++i1)//<<--
 	  dconc[i1] = 0.0;
         for (ipol =1; ipol<=3; ++ipol )
 	  {
 	    derivative(&fft_h, n1, n2, n3, L1, L2, L3, ipol, conc, aux1);
-	    for (i1=0; i1< n1*n2*n3; ++i1)
+	    for (i1=0; i1< local_size_grid; ++i1)//<<---
 	      {
                 aux1[i1] *= diffusivity[i1];
 	      }
 	    derivative(&fft_h, n1, n2, n3, L1, L2, L3, ipol, aux1, aux2);
             // summing up contributions from the three spatial directions
-            for (i1=0; i1< n1*n2*n3; ++i1)
+            for (i1=0; i1< local_size_grid; ++i1)//<<--
 	      dconc[i1] += aux2[i1];
 	  } 
-        for (i1=0; i1< n1*n2*n3; ++i1)
+        for (i1=0; i1< local_size_grid; ++i1)//<<--
 	  conc[i1] += dt*dconc[i1];
 	
         if (istep%30 == 1)
 	  {
             // Check the normalization of conc
-            ss = 0.;
-            r2mean = 0.;
+            ss_local = 0.0;
+            r2mean_local = 0.0;
             // HINT: the conc array is distributed, so only a part of it is on each processor
             for (i3 = 0; i3 < n3; ++i3)
 	      {
@@ -178,13 +197,14 @@ int main(){
                 for (i2 = 0; i2 < n2; ++i2)
 		  {
                     x2=L2*((double)i2)/n2 - 0.5*L2;
-                    for (i1 = 0; i1 < n1; ++i1)
+                    for (i1_local = 0; i1_local < local_n1; ++i1_local)//<<---
 		      {
+                        i1 = i1_local + local_n1_offset;
 			x1=L1*((double)i1)/n1 - 0.5*L1;
 			rr = pow( x1, 2)  + pow( x2, 2) + pow( x3, 2);
-			index = index_f(i1, i2, i3, n1, n2, n3); 
-			ss += conc[index]; 
-			r2mean += conc[index]*rr;
+			index = index_f(i1_local, i2, i3, n2, n3);//<<--
+			ss_local += conc[index]; //<<--
+			r2mean_local += conc[index]*rr;//<<--
 		      }   
 		  }
 	      }
@@ -193,13 +213,17 @@ int main(){
 	     * HINT: global values of ss and r2mean must be globally computed and distributed to all processes
 	     *
 	     */
+            MPI_Allreduce(&ss_local,&ss,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);//<<---
+            MPI_Allreduce(&r2mean_local,&r2mean,1,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);//<<--
+       
+
             ss *= fac;
             r2mean *= fac;
             end = seconds();
             printf(" %d %17.15f %17.15f Elapsed time per iteration %f \n ", istep, r2mean, ss, (end-start)/istep);
             // HINT: Use parallel version of output routines
-            plot_data_2d("concentration", n1, n2, n3, 2, conc);
-            plot_data_1d("1d_conc", n1, n2, n3, 3, conc);
+            plot_data_2d_parallel("concentration", n1, n2, n3,local_n1,local_n1_offset, 2, conc);//<<--
+            plot_data_1d_parallel("1d_conc", n1, n2, n3,local_n1,local_n1_offset, 3, conc);//<<--
 	  }
 	
       } 
@@ -214,6 +238,6 @@ int main(){
     /*
      * Finalize the MPI environment
      */
-
+    MPI_Finalize();//<<--
     return 0;
 } 

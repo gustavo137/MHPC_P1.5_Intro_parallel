@@ -1,6 +1,7 @@
 CC=mpicc
 CFLAGS = -O3 -Wall -I$(FFTW_INC)
-LIBS = -L$(FFTW_LIB) -lfftw3 -lm
+# here I added the flag -lfftw3_mpi
+LIBS = -L$(FFTW_LIB) -lfftw3_mpi -lfftw3 -lm 
 EXE = diffusion.x
 SRC = diffusion.c plot_data.c fft_wrapper.c derivative.c 
 HEAD = utilities.h
@@ -19,4 +20,4 @@ flush:
 	rm -f *.dat
 
 clean: 
-	rm -f *.o *.x *~
+	rm -f *.o *.x *~ *.dat

@@ -14,6 +14,7 @@
 #include <complex.h>
 #include <fftw3.h>
 #include <stdbool.h>
+#include <mpi.h>
 #include "utilities.h"
 
 /*
@@ -23,14 +24,20 @@ void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, doubl
 
     fftw_complex *aux;
     double G;
-    int i, i1, i2, i3, index;
-
+    ptrdiff_t i1_local, i1, index;
+    int i2, i3;
+    ptrdiff_t i;
+    
     /* 
      * This implementation will perform
      * a full 3D FFT of the data, and then derive.
      *
      */
-    aux = ( fftw_complex* ) fftw_malloc( n1 * n2 * n3 * sizeof(fftw_complex) );
+    aux = ( fftw_complex* ) fftw_malloc( sizeof(fftw_complex)*fft->local_size_grid);
+    if(aux==NULL){
+      fprintf(stderr, "Error allocating memory for aux.\n");
+      MPI_Abort(fft->mpi_comm, -1);
+    }
 
     // First get the FFT of data
     fft_3d( fft, n1, n2, n3, data, aux, true );
@@ -38,22 +45,23 @@ void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, doubl
     if( ipol == 1 ){
 	
       G = 2.0*pi/L1;
-      for( i1 = 0; i1 < n1; ++i1 ){
+      for( i1_local = 0; i1_local <fft->local_n1; ++i1_local ){
 	
-    	i = i1;
+    	i1 = i1_local + fft->local_n1_offset;
+        i=i1;
     	if( i1 > n1/2 ) i = i1 -n1;
     	if( i1 == n1/2 ) i = 0;
 	
     	for( i2 = 0; i2 < n2; ++i2 ){
     	  for( i3 = 0; i3 < n3; ++i3 ){
-    	    index = index_f( i1, i2, i3, n1, n2, n3 );
+    	    index = index_f( i1_local, i2, i3,  n2, n3 );
     	    aux[index] *= 0.0 + G * i * I;
     	  }
     	}
       }
     }
     
-    if( ipol == 2 ){
+    else if( ipol == 2 ){
       
       G = 2.0 * pi / L2;
       for( i2 = 0; i2 < n2; ++i2 ){
@@ -62,16 +70,17 @@ void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, doubl
     	if( i2 > n2/2 ) i = i2 -n2;
     	if( i2 == n2/2 ) i = 0;
 	
-    	for( i1 = 0; i1 < n1; ++i1 ){
+    	for( i1_local = 0; i1_local <fft->local_n1; ++i1_local ){
+          i1 = i1_local + fft->local_n1_offset;
     	  for( i3 = 0; i3 < n3; ++i3 ){
-    	    index = index_f( i1, i2, i3, n1, n2, n3 );
+    	    index = index_f( i1_local, i2, i3,  n2, n3 );
     	    aux[index] *= 0.0 + G * i * I;
     	  }
     	}
       }
     }
       
-    if( ipol == 3 ){
+    else if( ipol == 3 ){
       
       G = 2.0 * pi / L3;
       for( i3 = 0; i3 < n3; ++i3 ){
@@ -80,13 +89,18 @@ void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, doubl
     	if( i3 > n3/2 ) i = i3 -n3;
     	if( i3 == n3/2 ) i = 0;
 	
-    	for (i1 = 0; i1 < n1; ++i1){
+    	for (i1_local = 0; i1_local < fft->local_n1; ++i1_local){
+          i1 = i1_local + fft->local_n1_offset;
     	  for (i2 = 0; i2 < n2; ++i2){
-    	    index = index_f(i1, i2, i3, n1, n2, n3);
+    	    index = index_f(i1_local, i2, i3,  n2, n3);
     	    aux[index] *= 0.0 + G * i * I;
     	  }
     	}
       }
+    } else {
+      // Handle invalid ipol value
+      fprintf(stderr, "Invalid ipol value: %d\n", ipol);
+      MPI_Abort(fft->mpi_comm, -1);
     }
     
     // Now go back to real space

@@ -1,6 +1,6 @@
-CC=gcc
+CC=mpicc
 CFLAGS = -O3 -Wall -I$(FFTW_INC)
-LIBS = -L$(FFTW_LIB) -lfftw3 -lm
+LIBS = -L$(FFTW_LIB) -lfftw3_mpi -lfftw3 -lm
 EXE = diffusion.x
 SRC = diffusion.c plot_data.c fft_wrapper.c derivative.c 
 HEAD = utilities.h
@@ -16,7 +16,7 @@ $(EXE): $(OBJ)
 	$(CC) $(CFLAGS) -c $<
 
 flush:
-	rm -f *.dat *.png *.gif
+	rm -f *.dat
 
 clean: 
 	rm -f *.o *.x *~ *.dat

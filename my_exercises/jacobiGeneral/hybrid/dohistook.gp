@@ -9,7 +9,7 @@ set grid y
 
 set ylabel "Time (micro s)"
 set xlabel "#N"
-set title "Total Time, Calculation and Communication for MPI"
+set title "Total Time, Calculation and Communication for hybrid"
 set key right top
 
 # Definir la paleta de colores

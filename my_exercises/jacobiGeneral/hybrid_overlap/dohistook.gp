@@ -1,5 +1,5 @@
 set terminal pngcairo
-set output 'graficov2.png'
+set output 'graficook.png'
 
 # Cargar los datos
 set style data histogram
@@ -9,7 +9,7 @@ set grid y
 
 set ylabel "Time (micro s)"
 set xlabel "#N"
-set title "Total Time, Calculation and Communication for MPI"
+set title "Total Time, Calculation and Communication for overlap hybrid"
 set key right top
 
 # Definir la paleta de colores

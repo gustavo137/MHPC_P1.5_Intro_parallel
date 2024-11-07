@@ -9,7 +9,7 @@ set grid y
 
 set ylabel "Time (micro s)"
 set xlabel "#N"
-set title "Total Time vs. Calculation and Communication for MPI (N=8 to N=64)"
+set title "Total Time vs. Calculation and Communication for MPI overlap (N=8 to N=16)"
 set key top right
 
 # Definir el relleno y bordes de las barras

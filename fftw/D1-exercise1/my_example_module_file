@@ -1,0 +1,24 @@
+#%Module1.0#####################################################################
+
+module load mpi/4
+
+proc ModulesHelp { } {
+
+puts stderr " "
+puts stderr "This module loads fftw-3.3.10"
+puts stderr " "
+
+}
+module-whatis "Name: fftw build with openmpi"
+module-whatis "Version: 3.3.10"
+
+set     version                     4.1.1
+
+setenv          FFTW_LIB            /home/Arrow/opt/fftw/lib64
+setenv		FFTW_INC	    /home/Arrow/opt/fftw/include
+prepend-path    PATH                /home/Arrow/opt/fftw/bin
+prepend-path    MANPATH             /home/Arrow/opt/fftw/share/man
+prepend-path    LD_LIBRARY_PATH     /home/Arrow/opt/fftw/lib64
+prepend-path    PKG_CONFIG_PATH     /home/Arrow/opt/fftw/lib64/pkgconfig
+
+family "fftw"

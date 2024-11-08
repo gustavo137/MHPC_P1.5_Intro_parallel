@@ -17,6 +17,8 @@ module load gnu11/11.2.1
 module load openmpi3/3.1.4
 module load fftw/3.3.8
 
+## make ## I dont know if this works 
+
 ##mpirun ./diffusion.x >> out.dat
 echo "np 1" 
 mpirun -np 1 ./diffusion.x

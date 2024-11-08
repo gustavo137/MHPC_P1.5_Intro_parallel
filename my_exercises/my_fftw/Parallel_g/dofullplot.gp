@@ -1,5 +1,5 @@
 set terminal pngcairo size 800,600 enhanced font 'Arial,12'
-set output 'elapsed_times_comparison_by_iteration.png'
+set output 'times_by_ite.png'
 
 set style data histograms
 set style histogram cluster gap 1

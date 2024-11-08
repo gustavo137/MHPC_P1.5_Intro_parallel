@@ -49,7 +49,7 @@ void plot_data_1d( char* name, int n1, int n2, int n3, int dir, double* data)
         i3=n3/2-1;
         for (i1 = 0; i1 < n1; ++i1)
             {
-            index = index_f(i1,i2,i3,n2,n3);  
+            index = index_f(i1,i2,i3,n1,n2,n3);  
             fprintf(fp, " %14.6f \n", data[index] );
             }
         }
@@ -59,7 +59,7 @@ void plot_data_1d( char* name, int n1, int n2, int n3, int dir, double* data)
         i3=n3/2-1;
         for (i2 = 0; i2 < n2; ++i2)
             {
-            index = index_f(i1,i2,i3,n2,n3);    
+            index = index_f(i1,i2,i3,n1,n2,n3);    
             fprintf(fp, " %14.6f \n", data[index] );
             }
         }
@@ -69,7 +69,7 @@ void plot_data_1d( char* name, int n1, int n2, int n3, int dir, double* data)
         i2=n2/2-1;
         for (i3 = 0; i3 < n3; ++i3)
             {
-            index = index_f(i1,i2,i3,n2,n3);    
+            index = index_f(i1,i2,i3,n1,n2,n3);    
             fprintf(fp, " %14.6f \n", data[index] );
             }
         }
@@ -106,7 +106,7 @@ void plot_data_2d( char* name, int n1, int n2, int n3, int dir, double* data)
             {
             for (i3 = 0; i3 < n3; ++i3)
                 {
-                index = index_f(i1,i2,i3,n2,n3);  
+                index = index_f(i1,i2,i3,n1,n2,n3);  
                 fprintf(fp, " %14.6f ", data[index] );
                 }
             fprintf(fp, "\n");
@@ -119,7 +119,7 @@ void plot_data_2d( char* name, int n1, int n2, int n3, int dir, double* data)
             {
             for (i3 = 0; i3 < n3; ++i3)
                 {
-                index = index_f(i1,i2,i3,n2,n3);
+                index = index_f(i1,i2,i3,n1,n2,n3);
                 fprintf(fp, " %14.6f ", data[index] );
                 }
             fprintf(fp, "\n");
@@ -132,7 +132,7 @@ void plot_data_2d( char* name, int n1, int n2, int n3, int dir, double* data)
             {
             for (i2 = 0; i2 < n2; ++i2)
                 {
-                index = index_f(i1,i2,i3,n2,n3);
+                index = index_f(i1,i2,i3,n1,n2,n3);
                 fprintf(fp, " %14.6f ", data[index] );
                 }
             fprintf(fp, "\n");
@@ -179,7 +179,7 @@ void plot_data_1d_parallel( char* name, int n1, int n2, int n3, int n1_local, in
             for (i=1; i < npes; ++i)
                  displ[i] = sizes[i-1] + displ[i-1];
          }
-         index = index_f(0, i2, i3, n2, n3);
+         index = index_f(0, i2, i3,n1, n2, n3);
          MPI_Gatherv(&data[index],n1_local, MPI_DOUBLE,buffer,sizes, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
          if ( mype == 0){
              fp = fopen (buf, "w");
@@ -198,7 +198,7 @@ void plot_data_1d_parallel( char* name, int n1, int n2, int n3, int n1_local, in
          if (mype == owner){
              fp = fopen (buf, "w");
              for (i2 = 0; i2 < n2; ++i2){
-                 index = index_f(i1-n1_local_offset,i2,i3,n2,n3);
+                 index = index_f(i1-n1_local_offset,i2,i3,n1,n2,n3);
                  fprintf(fp, " %14.6f  \n ", data[index] );
              }
              fclose(fp);
@@ -209,7 +209,7 @@ void plot_data_1d_parallel( char* name, int n1, int n2, int n3, int n1_local, in
          if (mype == owner){
              fp = fopen (buf, "w");
              for (i3 = 0; i3 < n3; ++i3){
-                 index = index_f(i1-n1_local_offset, i2, i3, n2, n3);
+                 index = index_f(i1-n1_local_offset, i2, i3,n1, n2, n3);
                  fprintf(fp, " %14.6f \n", data[index] );
              }
              fclose(fp);
@@ -249,7 +249,7 @@ void plot_data_2d_parallel( char* name, int n1, int n2, int n3, int n1_local, in
              fp = fopen (buf, "w");
              for (i2 = 0; i2 < n2; ++i2){
                  for (i3 = 0; i3 < n3; ++i3){
-                     index = index_f(i1-n1_local_offset, i2, i3, n2, n3);
+                     index = index_f(i1-n1_local_offset, i2, i3,n1, n2, n3);
                      fprintf(fp, " %14.6f ", data[index] );
                  }
                  fprintf(fp, "\n");
@@ -271,7 +271,7 @@ void plot_data_2d_parallel( char* name, int n1, int n2, int n3, int n1_local, in
          }
          for (i3=0; i3< n3; ++i3){
              for ( i1 = 0; i1 < n1_local; ++i1){
-                 index = index_f (i1, i2, i3, n2, n3);
+                 index = index_f (i1, i2, i3,n1, n2, n3);
                  local_buffer[i1] = data[index];
              }
              MPI_Gatherv(local_buffer,n1_local, MPI_DOUBLE,buffer1d,sizes, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -308,7 +308,7 @@ void plot_data_2d_parallel( char* name, int n1, int n2, int n3, int n1_local, in
              }
          for (i2=0; i2< n2; ++i2){
              for ( i1 = 0; i1 < n1_local; ++i1){
-                 index = index_f (i1, i2, i3, n2, n3);
+                 index = index_f(i1, i2, i3,n1, n2, n3);
                  local_buffer[i1] = data[index];
              }
              MPI_Gatherv(local_buffer,n1_local, MPI_DOUBLE,buffer1d,sizes, displ, MPI_DOUBLE, 0, MPI_COMM_WORLD);

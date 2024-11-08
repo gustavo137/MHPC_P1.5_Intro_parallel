@@ -54,7 +54,7 @@ void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, doubl
 	
     	for( i2 = 0; i2 < n2; ++i2 ){
     	  for( i3 = 0; i3 < n3; ++i3 ){
-    	    index = index_f( i1_local, i2, i3,  n2, n3 );
+    	    index = index_f( i1_local, i2, i3, n1, n2, n3 );
     	    aux[index] *= 0.0 + G * i * I;
     	  }
     	}
@@ -73,7 +73,7 @@ void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, doubl
     	for( i1_local = 0; i1_local <fft->local_n1; ++i1_local ){
           i1 = i1_local + fft->local_n1_offset;
     	  for( i3 = 0; i3 < n3; ++i3 ){
-    	    index = index_f( i1_local, i2, i3,  n2, n3 );
+    	    index = index_f( i1_local, i2, i3, n1, n2, n3 );
     	    aux[index] *= 0.0 + G * i * I;
     	  }
     	}
@@ -92,7 +92,7 @@ void derivative( fftw_mpi_handler* fft, int n1, int n2, int n3, double L1, doubl
     	for (i1_local = 0; i1_local < fft->local_n1; ++i1_local){
           i1 = i1_local + fft->local_n1_offset;
     	  for (i2 = 0; i2 < n2; ++i2){
-    	    index = index_f(i1_local, i2, i3,  n2, n3);
+    	    index = index_f(i1_local, i2, i3, n1, n2, n3);
     	    aux[index] *= 0.0 + G * i * I;
     	  }
     	}

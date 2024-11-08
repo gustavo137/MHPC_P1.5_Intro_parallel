@@ -41,8 +41,8 @@ double seconds(){
  * http://www.fftw.org/doc/Row_002dmajor-Format.html#Row_002dmajor-Format
  *
  */
-//int index_f ( int i1, int i2, int i3, int n1, int n2, int n3)
-int index_f ( int i1, int i2, int i3, int n2, int n3)
+int index_f ( int i1, int i2, int i3, int n1, int n2, int n3)
+//int index_f ( int i1, int i2, int i3, int n2, int n3)
 {
   return n3*n2*i1 + n3*i2 + i3; 
 }

@@ -29,8 +29,22 @@
 
 #define MAX(x, y) (((x) > (y)) ? (x) : (y))
 
-int main(int argc, char **argv){
+// output data is comented 
 
+int main(int argc, char **argv){
+    /* 
+     * Initializzation of the MPI environment 
+     *
+     */
+     MPI_Init(&argc, &argv);
+     int rank;
+     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
+    /*
+     * initialize the fftw system and local dimension
+     * as the value returned from the parallel FFT grid initializzation 
+     *
+     */
+ 
     // Dimensions of the system
     double L1 = 10., L2 = 10., L3 = 20.;
     // Grid size
@@ -54,18 +68,6 @@ int main(int argc, char **argv){
     double ss_local,r2mean_local; //<<--
     fftw_mpi_handler fft_h;
 
-    /* 
-     * Initializzation of the MPI environment 
-     *
-     */
-     MPI_Init(&argc, &argv);
-     int rank;
-     MPI_Comm_rank(MPI_COMM_WORLD,&rank);
-    /*
-     * initialize the fftw system and local dimension
-     * as the value returned from the parallel FFT grid initializzation 
-     *
-     */
     init_fftw( &fft_h, n1, n2, n3, MPI_COMM_WORLD);
     ptrdiff_t local_n1 = fft_h.local_n1;
     ptrdiff_t local_n1_offset = fft_h.local_n1_offset;
@@ -124,7 +126,7 @@ int main(int argc, char **argv){
 		f1diff = exp( -pow((x1-0.5*L1)/rad_diff,2));
 		f1conc = exp( -pow((x1-0.5*L1)/rad_conc,2));
 		
-		index = index_f(i1_local, i2, i3, n2, n3);//<<--
+		index = index_f(i1_local, i2, i3,n1, n2, n3);//<<--
 		diffusivity[index]  = MAX( f1diff * f2diff, f2diff * f3diff);
 		conc[index] = f1conc * f2conc * f3conc;
 		ss += conc[index]; 
@@ -137,9 +139,9 @@ int main(int argc, char **argv){
      * HINT: The parallel version of  the output routines is provided in the mpi_output_routines folder
      *
      */
-    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 1, diffusivity);//<<--
-    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 2, diffusivity);//<<--
-    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 3, diffusivity);//<<--
+    //plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 1, diffusivity);//<<--
+    //plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 2, diffusivity);//<<--
+    //plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 3, diffusivity);//<<--
     
     
     fac= L1*L2*L3/(n1*n2*n3);
@@ -202,7 +204,7 @@ int main(int argc, char **argv){
                         i1 = i1_local + local_n1_offset;
 			x1=L1*((double)i1)/n1 - 0.5*L1;
 			rr = pow( x1, 2)  + pow( x2, 2) + pow( x3, 2);
-			index = index_f(i1_local, i2, i3, n2, n3);//<<--
+			index = index_f(i1_local, i2, i3, n1, n2, n3);//<<--
 			ss_local += conc[index]; //<<--
 			r2mean_local += conc[index]*rr;//<<--
 		      }   
@@ -220,10 +222,12 @@ int main(int argc, char **argv){
             ss *= fac;
             r2mean *= fac;
             end = seconds();
-            printf(" %d %17.15f %17.15f Elapsed time per iteration %f \n ", istep, r2mean, ss, (end-start)/istep);
+            if(rank==0){
+               printf(" %d %17.15f %17.15f Elapsed time per iteration %f \n ", istep, r2mean, ss, (end-start)/istep);
+            }
             // HINT: Use parallel version of output routines
-            plot_data_2d_parallel("concentration", n1, n2, n3,local_n1,local_n1_offset, 2, conc);//<<--
-            plot_data_1d_parallel("1d_conc", n1, n2, n3,local_n1,local_n1_offset, 3, conc);//<<--
+            //plot_data_2d_parallel("concentration", n1, n2, n3,local_n1,local_n1_offset, 2, conc);//<<--
+            //plot_data_1d_parallel("1d_conc", n1, n2, n3,local_n1,local_n1_offset, 3, conc);//<<--
 	  }
 	
       } 

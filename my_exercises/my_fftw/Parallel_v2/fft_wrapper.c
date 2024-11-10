@@ -1,15 +1,3 @@
-/* Assignement:
- * Here you have to modify the includes, the array sizes and the fftw calls, to use the fftw-mpi
- *
- * Regarding the fftw calls. here is the substitution 
- * fftw_plan_dft_3d -> fftw_mpi_plan_dft_3d
- * ftw_execute_dft  > fftw_mpi_execute_dft 
- * use fftw_mpi_local_size_3d for local size of the arrays
- * 
- * Created by G.P. Brandino, I. Girotto, R. Gebauer
- * Last revision: March 2016
- */ 
-
 #include <complex.h>
 #include <fftw3.h>
 #include <stdbool.h>
@@ -21,42 +9,32 @@
 #include <complex.h>
 
 double seconds(){
-
   /* 
    * Return the second elapsed since Epoch (00:00:00 UTC, January 1, 1970) 
    *
    */
   struct timeval tmp;
   double sec;
-
   gettimeofday( &tmp, (struct timezone *)0 );
   sec = tmp.tv_sec + ((double)tmp.tv_usec)/1000000.0;
-
   return sec;
 }
-
 /* 
  * Index linearization is computed following row-major order.
  * For more informtion see FFTW documentation:
  * http://www.fftw.org/doc/Row_002dmajor-Format.html#Row_002dmajor-Format
  *
  */
-int index_f ( int i1, int i2, int i3, int n1, int n2, int n3)
-//int index_f ( int i1, int i2, int i3, int n2, int n3)
-{
+int index_f ( int i1, int i2, int i3, int n1, int n2, int n3){
   return n3*n2*i1 + n3*i2 + i3; 
 }
-
-
-void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
-{
+void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm){
   /*
    * Call to fftw_mpi_init is needed to initialize a parallel enviroment for the fftw_mpi
    * See also: http://www.fftw.org/doc/MPI-Initialization.html
    */
   fftw_mpi_init();
   fft->mpi_comm = mpi_comm;
-
   /*
    *  Allocate a distributed grid for complex FFT using aligned memory allocation
    *  See details here:
@@ -72,10 +50,7 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    fft->local_size_grid = local_size_grid;
    fft->local_n1 = local_n1;
    fft->local_n1_offset = local_n1_offset; 
-
-
    //<<<<<<<---------
-
   //Allocate the fftw_data
   fft->fftw_data = ( fftw_complex* ) fftw_malloc(local_size_grid * sizeof( fftw_complex ) );
   if(fft->fftw_data==NULL){
@@ -89,17 +64,12 @@ void init_fftw(fftw_mpi_handler *fft, int n1, int n2, int n3, MPI_Comm mpi_comm)
    */
   fft->fw_plan = fftw_mpi_plan_dft_3d(n1,n2,n3,fft->fftw_data,fft->fftw_data,mpi_comm,FFTW_FORWARD,FFTW_MEASURE);// NULL;
   fft->bw_plan = fftw_mpi_plan_dft_3d(n1,n2,n3,fft->fftw_data,fft->fftw_data,mpi_comm,FFTW_BACKWARD,FFTW_MEASURE);//NULL;
-
 }
-
-void close_fftw(fftw_mpi_handler *fft)
-{
+void close_fftw(fftw_mpi_handler *fft){
     fftw_destroy_plan(fft->bw_plan);
     fftw_destroy_plan(fft->fw_plan);
     fftw_free(fft->fftw_data);
 }
-
-
 /* 
  * This subroutine uses fftw to calculate 3-dimensional discrete FFTs.
  * The data in direct space is assumed to be real-valued
@@ -119,44 +89,35 @@ void close_fftw(fftw_mpi_handler *fft)
  * f(l) = 1/N \sum_{k=0}^{N-1} exp(+ 2 \pi I k*l/N) F(k)
  * 
  */
-void fft_3d(fftw_mpi_handler* fft, int n1, int n2, int n3, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal)
-{
+void fft_3d(fftw_mpi_handler* fft, int n1, int n2, int n3, double *data_direct, fftw_complex* data_rec, bool direct_to_reciprocal){
     double fac;
     int i;
-    
     // Now distinguish in which direction the FFT is performed
-    if ( direct_to_reciprocal)
-      {
+    if ( direct_to_reciprocal){
         fftw_complex *input = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * fft->local_size_grid);//<<<-----
         if (input == NULL) {
             fprintf(stderr, "Error allocating memory for FFTW input data.\n");
             MPI_Abort(fft->mpi_comm, -1);
         }
-	for(i = 0; i < fft->local_size_grid; i++)//<<--
-	  {
+	for(i = 0; i < fft->local_size_grid; i++){//<<--
 	    fft->fftw_data[i]  = data_direct[i] + 0.0 * I;
 	  } 
 	//fftw_execute_dft(fft->fw_plan, fft->fftw_data, fft->fftw_data);
 	fftw_mpi_execute_dft(fft->fw_plan, input, data_rec);//<<--
-
 	//memcpy(data_rec, fft->fftw_data, n1*n2*n3*sizeof(fftw_complex)); 
         fftw_free(input);       
       }
-    else
-      {
+    else {
 	//memcpy(fft->fftw_data, data_rec, n1*n2*n3*sizeof(fftw_complex));
         fftw_complex *output = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) * fft->local_size_grid);
         if (output == NULL) {
             fprintf(stderr, "Error allocating memory for FFTW output data.\n");
             MPI_Abort(fft->mpi_comm, -1);
         }	  
-  
 	//fftw_execute_dft(fft->bw_plan, fft->fftw_data, fft->fftw_data);
 	fftw_mpi_execute_dft(fft->bw_plan,data_rec,output);
 	fac = 1.0 / ( n1 * n2 * n3 );
-	
-	for( i = 0; i <fft->local_size_grid; ++i )
-	  {
+	for( i = 0; i <fft->local_size_grid; ++i){
 	    //data_direct[i] = creal(fft->fftw_data[i])*fac;
             data_direct[i] = creal(output[i])*fac;
 	  }

@@ -1,7 +1,6 @@
 CC=mpicc
-CFLAGS = -O3 -Wall -I$(FFTW_INC)
-# here I added the flag -lfftw3_mpi
-LIBS = -L$(FFTW_LIB) -lfftw3_mpi -lfftw3 -lm 
+CFLAGS = -O0 -g -Wall -I./ -I$(FFTW_INC) -I/u/shared/programs/x86_64/openmpi/1.8.3/gnu/4.9.2/torque/include/ 
+LIBS = -L$(FFTW_LIB) -lfftw3_mpi -lfftw3 -lm		
 EXE = diffusion.x
 SRC = diffusion.c plot_data.c fft_wrapper.c derivative.c 
 HEAD = utilities.h
@@ -20,4 +19,4 @@ flush:
 	rm -f *.dat
 
 clean: 
-	rm -f *.o *.x *~ *.dat
+	rm -f *.o *.x *~

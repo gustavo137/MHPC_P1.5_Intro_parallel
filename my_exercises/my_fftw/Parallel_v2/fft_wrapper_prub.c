@@ -3,9 +3,11 @@
 #include <string.h>
 //
 #include <complex.h>
-#include <fftw3-mpi.h>
+//#include <fftw3-mpi.h>
 #include <fftw3.h>
+#include <stdlib.h>
 #include <sys/time.h>
+
 double seconds() {
   /* Return the second elapsed since Epoch (00:00:00 UTC, January 1, 1970) */
   struct timeval tmp;
@@ -25,7 +27,7 @@ int index_f(int i1, int i2, int i3, int n1, int n2, int n3) {
 }
 void init_fftw(fftw_dist_handler *fft, int n1, int n2, int n3,
                MPI_Comm mpi_comm) {
-  int npes, rank;
+  int npes, mype;
   int buffer_size = 0;
   fft->mpi_comm = mpi_comm;
   /*
@@ -37,9 +39,9 @@ void init_fftw(fftw_dist_handler *fft, int n1, int n2, int n3,
    *
    */
   // geting local sizes
-  MPI_Comm_size(mpi_comm, &fft->npes);
-  MPI_Comm_rank(mpi_comm, &fft->rank);
-  if (((n1 % npes) || (n2 % npes)) && !rank) {
+  MPI_Comm_size(mpi_comm, &npes);
+  MPI_Comm_rank(mpi_comm, &mype);
+  if (((n1 % npes) || (n2 % npes)) && !mype) {
     fprintf(stdout, "\nN1 dimension must be multiple of the number of "
                     "processes. The program will be aborted...\n\n");
     MPI_Abort(mpi_comm, 1);
@@ -50,10 +52,11 @@ void init_fftw(fftw_dist_handler *fft, int n1, int n2, int n3,
   fft->n2 = n2;
   fft->n3 = n3;
   fft->local_n1 = n1 / fft->npes;
-  fft->local_n1_offset = fft->rank * fft->local_n1;
+  fft->local_n1_offset = fft->mype * fft->local_n1;
   fft->global_size_grid = n1 * n2 * n3;
   fft->local_size_grid = fft->local_n1 * n2 * n3;
-
+  fft->fftw_data = (fftw_complex *)fftw_malloc(fft->local_size_grid * sizeof(fftw_complex));
+  
   /*
    * Allocate fft->fftw_data and create an FFTW plan for each 1D FFT among all
    * dimensions
@@ -103,7 +106,7 @@ void close_fftw(fftw_dist_handler *fft) {
 void fft_3d(fftw_dist_handler *fft, double *data_direct, fftw_complex *data_rec,
             bool direct_to_reciprocal) {
   double fac;
-  int i1, i2, i3, index, start_index, end_index, index_buf, i2_loc;
+  int i1, i2, i3, index, starbt_index, end_index, index_buf, i2_loc;
   int n2 = fft->n2, n3 = fft->n3, n1 = fft->n1, npes, block_dim, nblock;
 
   /* Allocate buffers to send and receive data */
@@ -127,6 +130,7 @@ void fft_3d(fftw_dist_handler *fft, double *data_direct, fftw_complex *data_rec,
     for (ptrdiff_t i1_local = 0; i1_local < fft->local_n1; i1_local++){
       fftw_execute_dft(fft->fw_plan_2d,&local_data[i1_local*fft->n2*fft->n3],&local_data[i1_local*fft->n2*fft->n3]);
     }
+    
     ///// transpose the data 
      // get somethin as transposed_data
     transpose_data(fft,local_data,transposed_data);
@@ -165,7 +169,61 @@ void fft_3d(fftw_dist_handler *fft, double *data_direct, fftw_complex *data_rec,
 }  
 
 // this function make the transposition and the alltoall 
-void transpose_data(){
+void transpose_data(fftw_dist_handler *fft, fftw_complex *local_data, fftw_complex *transposed_data) {
+    int num_procs = fft->npes;//size
+    MPI_Comm comm = fft->mpi_comm;
+    ptrdiff_t n2n3 = fft->n2 * fft->n3;
 
-}
-  ////////////////////////////////////////////////////////////////////////////////////////////
+    // Reunir información de los tamaños y desplazamientos locales
+    int *local_n1_array = malloc(num_procs * sizeof(int));
+    int *local_n1_offsets = malloc(num_procs * sizeof(int));
+    MPI_Allgather(&fft->local_n1, 1, MPI_INT, local_n1_array, 1, MPI_INT, comm);
+    MPI_Allgather(&fft->local_n1_offset, 1, MPI_INT, local_n1_offsets, 1, MPI_INT, comm);
+
+    // Calcular sendcounts, recvcounts, sdispls y rdispls en un solo paso
+    int *sendcounts = malloc(num_procs * sizeof(int));
+    int *recvcounts = malloc(num_procs * sizeof(int));
+    int *sdispls = malloc(num_procs * sizeof(int));
+    int *rdispls = malloc(num_procs * sizeof(int));
+    ptrdiff_t offset = 0;
+
+    for (int p = 0; p < num_procs; ++p) {
+        sendcounts[p] = fft->local_n1 * n2n3 / num_procs;
+        sdispls[p] = offset;
+        recvcounts[p] = local_n1_array[p] * n2n3 / num_procs;
+        rdispls[p] = (p == 0) ? 0 : rdispls[p - 1] + recvcounts[p - 1];
+        offset += sendcounts[p];
+    }
+
+    // Buffers de envío y recepción
+    fftw_complex *sendbuf = fftw_malloc(sizeof(fftw_complex) * fft->local_size_grid);
+    fftw_complex *recvbuf = fftw_malloc(sizeof(fftw_complex) * fft->local_size_grid);
+    if (!sendbuf || !recvbuf) {
+        fprintf(stderr, "Error allocating memory. In transpose function.\n");
+        MPI_Abort(comm, -1);
+    }
+
+    // Empaquetar datos en sendbuf
+    memcpy(sendbuf, local_data, sizeof(fftw_complex) * fft->local_size_grid);
+    // MPI_Alltoallw(const void *sendbuf, const int sendcounts[],
+                  // const int sdispls[], const MPI_Datatype sendtypes[],
+                  // void *recvbuf, const int recvcounts[], const int rdispls[],
+                  // const MPI_Datatype recvtypes[], MPI_Comm comm)
+    // Envío y recepción de datos
+    MPI_Alltoallv(sendbuf, sendcounts, sdispls, MPI_C_DOUBLE_COMPLEX,
+                  recvbuf, recvcounts, rdispls, MPI_C_DOUBLE_COMPLEX, comm);
+
+    // Desempaquetar datos en transposed_data
+    memcpy(transposed_data, recvbuf, sizeof(fftw_complex) * fft->local_size_grid);
+
+    // Limpieza de memoria
+    fftw_free(sendbuf);
+    fftw_free(recvbuf);
+    free(sendcounts);
+    free(recvcounts);
+    free(sdispls);
+    free(rdispls);
+    free(local_n1_array);
+    free(local_n1_offsets);
+} 
+////////////////////////////////////////////////////////////////////////////////////////////

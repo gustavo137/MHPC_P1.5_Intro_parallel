@@ -139,9 +139,9 @@ int main(int argc, char **argv){
      * HINT: The parallel version of  the output routines is provided in the mpi_output_routines folder
      *
      */
-    //plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 1, diffusivity);//<<--
-    //plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 2, diffusivity);//<<--
-    //plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 3, diffusivity);//<<--
+    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 1, diffusivity);//<<--
+    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 2, diffusivity);//<<--
+    plot_data_2d_parallel("diffusivity", n1, n2, n3, local_n1, local_n1_offset, 3, diffusivity);//<<--
     
     
     fac= L1*L2*L3/(n1*n2*n3);
@@ -226,8 +226,8 @@ int main(int argc, char **argv){
                printf(" %d %17.15f %17.15f Elapsed time per iteration %f \n ", istep, r2mean, ss, (end-start)/istep);
             }
             // HINT: Use parallel version of output routines
-            //plot_data_2d_parallel("concentration", n1, n2, n3,local_n1,local_n1_offset, 2, conc);//<<--
-            //plot_data_1d_parallel("1d_conc", n1, n2, n3,local_n1,local_n1_offset, 3, conc);//<<--
+            plot_data_2d_parallel("concentration", n1, n2, n3,local_n1,local_n1_offset, 2, conc);//<<--
+            plot_data_1d_parallel("1d_conc", n1, n2, n3,local_n1,local_n1_offset, 3, conc);//<<--
 	  }
 	
       } 

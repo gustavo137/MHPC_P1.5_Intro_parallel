@@ -1,13 +1,20 @@
 # Archivo: plot_barras.gp
 set terminal pngcairo size 800,600 enhanced font 'Verdana,10'
-set output 'FFTW_v2.png'
+#set terminal pngcairo size 800,600
+set output 'FFTW_ori_vs_my.png'
 
-set title "Time vs number of process"
-set xlabel " np "
-set ylabel "Time (s)"
-set style data histograms
+set style data histogram
+set style histogram cluster gap 1
 set style fill solid border -1
-set boxwidth 0.5
+set boxwidth 0.9
+
+set title "FFTW vs my_FFTW"
+set xlabel "np"
+set ylabel "Time (s)"
+set xtics format "%.0f"
 set grid ytics
 
-plot 'timesite.datg' using 2:xtic(1) title "time" lc rgb "blue"
+set key outside top right
+
+plot 'timesite61.datg' using 2:xtic(1) title 'FFTW' linecolor rgb "blue", \
+     '' using 3 title 'MyFFTW' linecolor rgb "red"

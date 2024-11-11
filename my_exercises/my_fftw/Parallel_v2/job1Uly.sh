@@ -1,6 +1,6 @@
 #!/bin/bash
-#SBATCH --job-name=my_fft_v1                # Job name
-#SBATCH --output=my_fft_v1.datg               # output
+#SBATCH --job-name=my_fft_v2                # Job name
+#SBATCH --output=my_fft_v2.datg               # output
 ###SBATCH --mail-type=END,FAIL             # Mail events (NONE, BEGIN, END, FAIL, ALL)
 ###SBATCH --mail-user=gparedes@ictp.it     # Where to send mail        
 #SBATCH -N 1                               # Number of nodes only use 1 for this exercise
@@ -9,7 +9,7 @@
 #SBATCH --cpus-per-task=1
 ##SBATCH --mem=0                           # with 0 take all the memory available
 #SBATCH --partition=regular1               #
-#SBATCH --reservation=mhpc_2024_11         ## for more than 4 nodes comment this line
+##SBATCH --reservation=mhpc_2024_11         ## for more than 4 nodes comment this line
 
 echo "fast Fourier Transform N1"
 

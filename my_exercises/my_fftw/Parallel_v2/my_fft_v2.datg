@@ -1,0 +1,39 @@
+fast Fourier Transform N1
+np 1
+ 1 0.546402507325362 1.000000000000025 Elapsed time per iteration 0.239934 
+  31 0.722089579189341 1.000000000000020 Elapsed time per iteration 0.226266 
+  61 0.874614471516767 1.000000000000042 Elapsed time per iteration 0.225904 
+  91 1.011314830823462 1.000000000000054 Elapsed time per iteration 0.225776 
+ np 2
+ 1 0.546402507325337 0.999999999999972 Elapsed time per iteration 0.136548 
+  31 0.722089579189251 0.999999999999967 Elapsed time per iteration 0.122818 
+  61 0.874614471516742 1.000000000000003 Elapsed time per iteration 0.121997 
+  91 1.011314830823490 1.000000000000000 Elapsed time per iteration 0.121757 
+ np 4
+ 1 0.546402507325337 0.999999999999973 Elapsed time per iteration 0.067622 
+  31 0.722089579189254 0.999999999999975 Elapsed time per iteration 0.060875 
+  61 0.874614471516742 1.000000000000000 Elapsed time per iteration 0.060848 
+  91 1.011314830823481 0.999999999999996 Elapsed time per iteration 0.060815 
+ np 8
+ 1 0.546402507325340 0.999999999999976 Elapsed time per iteration 0.032348 
+  31 0.722089579189256 0.999999999999982 Elapsed time per iteration 0.029074 
+  61 0.874614471516748 0.999999999999992 Elapsed time per iteration 0.029114 
+  91 1.011314830823485 0.999999999999991 Elapsed time per iteration 0.029047 
+ np 16
+ 1 0.546402507325340 0.999999999999995 Elapsed time per iteration 0.033507 
+  31 0.722089579189263 0.999999999999985 Elapsed time per iteration 0.027950 
+  61 0.874614471516748 0.999999999999994 Elapsed time per iteration 0.028012 
+  91 1.011314830823479 0.999999999999999 Elapsed time per iteration 0.027905 
+ np 20
+
+N1 dimension must be multiple of the number of processes. The program will be aborted...
+
+--------------------------------------------------------------------------
+MPI_ABORT was invoked on rank 0 in communicator MPI_COMM_WORLD
+with errorcode 1.
+
+NOTE: invoking MPI_ABORT causes Open MPI to kill all MPI processes.
+You may or may not see output from other processes, depending on
+exactly when Open MPI kills them.
+--------------------------------------------------------------------------
+finished

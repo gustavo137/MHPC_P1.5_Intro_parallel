@@ -1,0 +1,155 @@
+# -------------------------
+# Build artifacts (C/C++)
+# -------------------------
+*.o
+*.a
+*.so
+*.so.*
+*.la
+*.lo
+*.dylib
+*.dll
+*.exe
+*.out
+*.obj
+*.pch
+*.pdb
+*.mod            # some Fortran/C toolchains emit .mod
+*.dSYM/
+*.stackdump
+
+# Binaries produced by this project
+diffusion.x
+diffusion_mpi.x
+*.x
+
+# Autotools / CMake (if you experiment)
+build/
+_build/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile.in
+aclocal.m4
+autom4te.cache/
+configure
+configure.ac~
+libtool
+m4/
+*.pc
+
+# -------------------------
+# Perf / profiling / FlameGraph
+# -------------------------
+perf.data*
+*.perf            # per-rank files (e.g., rankXX.perf)
+*.folded
+out.folded
+*.qcache
+*.nvvp
+nsys-rep/
+*.sqlite
+*.json.gz         # e.g., nsys exports
+
+# -------------------------
+# Simulation outputs (this project)
+# -------------------------
+# 1D and 2D snapshots:
+1d_conc_*.dat
+concentration_*.dat
+diffusivity_*.dat
+
+# gnuplot / animation frames:
+frames_*/
+frame_*.png
+*.gif
+*.mp4
+*.webm
+
+# quick plots
+*.png
+
+# Keep images placed under docs/ (override the global image ignores above)
+!docs/
+!docs/**.png
+!docs/**.gif
+!docs/**.jpg
+!docs/**.jpeg
+
+# -------------------------
+# FFTW & math libs miscellany
+# -------------------------
+wisdom*
+*.fftw
+*.wisdom
+
+# -------------------------
+# Logs / dumps / scratch
+# -------------------------
+*.log
+*.tmp
+*.cache
+*.bak
+*.old
+*~
+nohup.out
+core
+core.*
+vgcore.*
+
+# -------------------------
+# Editors / IDEs / OS cruft
+# -------------------------
+# Vim
+*.swp
+*.swo
+.session.vim
+
+# Emacs
+*~ 
+\#*\#
+.emacs.desktop
+.emacs.desktop.lock
+.tramp
+auto-save-list
+
+# VSCode / JetBrains
+.vscode/
+.idea/
+
+# macOS / Linux / Windows
+.DS_Store
+.AppleDouble
+.Spotlight-V100
+.Trashes
+Thumbs.db
+Desktop.ini
+
+# -------------------------
+# Local env & modules (paths on your machine)
+# -------------------------
+.env
+*.env
+*.local
+.local/
+modules/
+modulefiles/
+
+
+# -------------------------
+# Vim / Neovim temporary files
+# -------------------------
+*.swp
+*.swo
+*.swx
+*.swn
+*.un~
+.*.swp
+.*.swo
+.*.swx
+.*.swn
+.*.un~
+
+
+# data files
+*.dat 

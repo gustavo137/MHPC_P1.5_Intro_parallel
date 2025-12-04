@@ -8,3 +8,5 @@
 *.datjacobiMPI2
 *.datjacobiMPI4
 *.o
+*.DS_Store
+*/.DS_Store
